@@ -18,7 +18,7 @@
 #include <fstream>
 #include <string.h>
 #include "simplicialPolyhedron.h"
-#include "../../sparse matrixes/classes/sparseMatrix.h"
+#include "sparseMatrix.h"
 using namespace std;
 
 class simplicialChainComplex {
