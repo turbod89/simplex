@@ -811,11 +811,11 @@ sparseMatrix& sparseMatrix::eye(int r, int c) {
     this->cols[i] = i;
   }
   
-  for (int i = 0; i <this->numRows; i++)
+  for (int i = 0; i < this->numRows; i++)
     if (i < this->numValues)
       this->rows[i] = i;
     else
-      this->rows[i] = -1;
+      this->rows[i] = this->numValues;
   
   return *this;
 }
@@ -825,18 +825,19 @@ sparseMatrix& sparseMatrix::eye(int n) {
 }
 
 
-int sparseMatrix::emptyRowsToBottom(int * rowPerm) {
+int sparseMatrix::emptyRowsToBottom(sparseMatrix & rowPerm) {
     
     // copy of rowPerm
+    rowPerm.eye(this->numRows);
     int * v = (int *) malloc(this->numRows * sizeof(int));
-    for (int i = 0 ; i < this->numRows ; i++)
-        v[i] = rowPerm[i];
+    memcpy(v,rowPerm.cols,this->numRows*sizeof(int));
     
     // counting empty rows
     int numEmptyRows = 0;
     for (int i = 0; i < this->numRows; i++)
-        if (this->rows[i] < 0 )
+        if (this->numValuesInRow(i) == 0 )
             numEmptyRows++;
+    
     if (numEmptyRows == 0)
         return 0;
     
