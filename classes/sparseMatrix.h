@@ -29,10 +29,9 @@ class sparseMatrix {
     int * cols;
     int * rows;
     
-    int rowStartPosition(int row) const;
-    int binary_search_position(const int * const v, int length, int needle) const;
-    int binary_search(const int * const v, int length, int needle) const;
-    void mergeSort(int * v, int length, int * const * const aux = NULL, int auxLength = 0) const;
+    int binary_search_position(int length, const int * const v, int needle) const;
+    int binary_search(int length, const int * const v, int needle) const;
+    void mergeSort(int length, int * v,int auxLength = 0, int * const * const aux = NULL) const;
     int gcd(int n, int * v, int * c = NULL) const;
     int LDU_full(int n, int m, int * const M, int * const L, int * const D, int * const U, int * const rowPerm, int * const colPerm) const;
     int minAbs(int n, int const * const v) const;
@@ -60,13 +59,13 @@ class sparseMatrix {
     int * getCols();
     int size(int i) const;
     int length() const;
-    const sparseMatrix& decompose(int &r, int &c, int &v, int ** values, int ** cols, int ** rows) const;
-    const sparseMatrix& format2(int &r, int &c, int &v, int ** rows = NULL, int ** cols = NULL, int ** values = NULL) const;
+    const sparseMatrix& decompose(int ** values, int ** cols, int ** rows) const;
+    const sparseMatrix& format2(int ** rows = NULL, int ** cols = NULL, int ** values = NULL) const;
     sparseMatrix& read(istream& in);
     const sparseMatrix& print(ostream& out) const;
     const sparseMatrix& print_full(ostream& out) const;
-    const sparseMatrix& get(int * a) const;
-    int numValuesInRow(int row) const;
+    const sparseMatrix& getFullValues(int * a) const;
+    inline int numValuesInRow(int row) const;
     sparseMatrix& swapRows(int row1, int row2);
     sparseMatrix& swapCols(int col1, int col2);
     sparseMatrix& deleteCols(int n, int * cols);

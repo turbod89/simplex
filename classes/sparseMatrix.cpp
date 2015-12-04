@@ -12,10 +12,10 @@ sparseMatrix::sparseMatrix(int r, int c, int v,const int * const values,const in
   this->numValues = v;
   this->values = (int *) malloc(v*sizeof(int));
   this->cols = (int *) malloc(v*sizeof(int));
-  this->rows = (int *) malloc(r*sizeof(int));
+  this->rows = (int *) malloc((r+1)*sizeof(int));
   memcpy(this->values,values,v*sizeof(int));
   memcpy(this->cols,cols,v*sizeof(int));
-  memcpy(this->rows,rows,r*sizeof(int));
+  memcpy(this->rows,rows,(r+1)*sizeof(int));
 }
 
 sparseMatrix::sparseMatrix(int r , int c) {
@@ -24,10 +24,10 @@ sparseMatrix::sparseMatrix(int r , int c) {
   this->numValues = 0;
   this->values = NULL;
   this->cols = NULL;
-  this->rows = (int *) malloc(r*sizeof(int));
+  this->rows = (int *) malloc((r+1)*sizeof(int));
   
-  for (int i = 0 ; i < this->numRows; i++)
-    this->rows[i] = -1;
+  for (int i = 0 ; i < this->numRows + 1; i++)
+    this->rows[i] = 0;
 
 }
 
@@ -45,18 +45,16 @@ sparseMatrix::sparseMatrix(int * M, int r , int c) {
     this->cols = (int *) malloc(cnt*sizeof(int));
     this->rows = (int *) malloc(r*sizeof(int));
 
-    cnt = 0;
+    this->rows[0] = 0;
     for (int i = 0; i < r; i++) {
-      this->rows[i] = -1;
       for (int j = 0; j < c; j++) {
         if (M[i*c + j] != 0) {
-          if (this->rows[i] == -1)
-            this->rows[i] = cnt;
           this->cols[cnt] = j;
           this->values[cnt] = M[i*c + j];
-          cnt++;
+          this->rows[i]++;
         }
       }
+      this->rows[i+1] = this->rows[i];
     }
 
 }
@@ -78,10 +76,10 @@ sparseMatrix& sparseMatrix::operator=(const sparseMatrix& M) {
 
   this->values = (int *) malloc(this->numValues*sizeof(int));
   this->cols = (int *) malloc(this->numValues*sizeof(int));
-  this->rows = (int *) malloc(this->numRows*sizeof(int));
+  this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
   memcpy(this->values,M.values,this->numValues*sizeof(int));
   memcpy(this->cols,M.cols,this->numValues*sizeof(int));
-  memcpy(this->rows,M.rows,this->numRows*sizeof(int));
+  memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
   
   return *this;
 }
@@ -123,26 +121,17 @@ int sparseMatrix::length() const {
   return this->numValues;
 }
 
-const sparseMatrix& sparseMatrix::decompose(int &r, int &c, int &v, int ** values, int ** cols, int ** rows) const {
-  r = this->numRows;
-  c = this->numCols;
-  v = this->numValues;
-  *values = (int *) malloc(v*sizeof(int));
-  *cols = (int *) malloc(v*sizeof(int));
-  *rows = (int *) malloc(r*sizeof(int));
-  memcpy(*values,this->values,v*sizeof(int));
-  memcpy(*cols,this->cols,v*sizeof(int));
-  memcpy(*rows,this->rows,r*sizeof(int));
+const sparseMatrix& sparseMatrix::decompose(int ** values, int ** cols, int ** rows) const {
+  *values = (int *) malloc(this->numValues*sizeof(int));
+  *cols = (int *) malloc(this->numValues*sizeof(int));
+  *rows = (int *) malloc((this->numRows+1)*sizeof(int));
+  memcpy(*values,this->values,this->numValues*sizeof(int));
+  memcpy(*cols,this->cols,this->numValues*sizeof(int));
+  memcpy(*rows,this->rows,(this->numRows+1)*sizeof(int));
   return *this;
 }
 
-const sparseMatrix& sparseMatrix::format2(int &r, int &c, int &v, int ** rows, int ** cols, int ** values) const {
-  r = this->numRows;
-  c = this->numCols;
-  v = this->numValues;
-  *values = (int *) malloc(v*sizeof(int));
-  *cols = (int *) malloc(v*sizeof(int));
-  *rows = (int *) malloc(v*sizeof(int));
+const sparseMatrix& sparseMatrix::format2(int ** rows, int ** cols, int ** values) const {
 
   if (rows != NULL) {
     // from format1 to format2
@@ -171,7 +160,7 @@ sparseMatrix& sparseMatrix::read(istream& in) {
   
   this->values = (int *) malloc(this->numValues*sizeof(int));
   this->cols = (int *) malloc(this->numValues*sizeof(int));
-  this->rows = (int *) malloc(this->numRows*sizeof(int));
+  this->rows = (int *) malloc((this->numRows + 1)*sizeof(int));
 
   for (int i = 0; i < this->numValues; i++)
     in >> this->values[i];
@@ -179,7 +168,7 @@ sparseMatrix& sparseMatrix::read(istream& in) {
   for (int i = 0; i < this->numValues; i++)
     in >> this->cols[i];
 
-  for (int i = 0; i < this->numRows; i++)
+  for (int i = 0; i < this->numRows + 1; i++)
     in >> this->rows[i];
 
   return *this;
@@ -198,7 +187,7 @@ const sparseMatrix& sparseMatrix::print(ostream& out) const {
     out << " " << this->cols[i];
   out << endl;
 
-  for (int i = 0; i < this->numRows; i++)
+  for (int i = 0; i < this->numRows + 1; i++)
     out << " " << this->rows[i];
   out << endl;
 
@@ -209,72 +198,50 @@ const sparseMatrix& sparseMatrix::print_full(ostream& out) const {
 
   out << this->numRows << " " << this->numCols << endl;
 
-  for (int i = 0; i < this->numRows; i++) {
-    if ( this->rows[i] < 0 ) {
-      for (int j = 0 ; j < this->numCols; j++)
+  for (int i = 0, nextValue = 0; i < this->numRows; i++) {
+    for ( int j = 0; j < this->numCols ; j++)
+      if (nextValue < this->row[i+1] && this->cols[nextValue] == j) {
+        out << " " << this->values[nextValue];
+        nextValue++;
+      } else {
         out << " 0";
-    } else {
-      int nextValue = 0;
-      int nr = this->numValuesInRow(i);
-      for ( int j = 0; j < this->numCols ; j++)
-        if (nextValue < nr && this->cols[this->rows[i] + nextValue] == j) {
-          out << " " << this->values[this->rows[i] + nextValue];
-          nextValue++;
-        } else {
-          out << " 0";
-        }
-    }
+      }
     out << endl;
   }
 
   return *this;
 }
 
-const sparseMatrix& sparseMatrix::get(int * a) const {
+const sparseMatrix& sparseMatrix::getFullValues(int * a) const {
   
-  for (int i = 0, v = 0; i < this->numRows; i++) {
-      
-    if ( this->rows[i] < 0 ) {
-        for (int j = 0 ; j < this->numCols; j++)
-        a[v] = 0;
-          
+  ////////////////
+  //
+  // write on the array the values of the full matrix
+  //
+  ////////////////
+  
+  for (int i = 0, nextValue = 0; i < this->numRows; i++) {
+    for ( int j = 0; j < this->numCols ; j++)
+      if (nextValue < this->row[i+1] && this->cols[nextValue] == j) {
+        a[i*this->numCols + j] = this->values[nextValue];
+        nextValue++;
       } else {
-        int nextValue = 0;
-        int nr = this->numValuesInRow(i);
-        for ( int j = 0; j < this->numCols ; j++)
-            if (nextValue < nr && this->cols[this->rows[i] + nextValue] == j) {
-                a[v] = this->values[this->rows[i] + nextValue];
-            v++;
-                nextValue++;
-            } else {
-              a[v] = 0;
-          v++;
-            }
+        a[i*this->numCols + j] = 0;
       }
-
+    out << endl;
   }
   
   return (*this);
 }
 
-int sparseMatrix::rowStartPosition(int row) const {
+int sparseMatrix::binary_search_position(int length, const int * const v, int needle) const {
   
-  if (this->rows[row] >= 0)
-    return this->rows[row];
- 
-  int i = row;
-  
-  while (i >= 0 && this->rows[i]<0)
-    i--;
-  
-  if ( i < 0)
-    return 0;
-
-  return this->rows[i] + this->numValuesInRow(i);
- 
-}
-
-int sparseMatrix::binary_search_position(const int * const v, int length, int needle) const {
+  ////////////////////
+  //
+  // binary search, return the position where element is placed if it
+  // exists or the position where it SHOULD be placed
+  //
+  ////////////////////
   
   if (length <= 0)
     return 0;
@@ -283,13 +250,22 @@ int sparseMatrix::binary_search_position(const int * const v, int length, int ne
   if ( v[i] == needle)
     return i;
   else if ( v[i] > needle)
-    return binary_search_position(v,i, needle);
+    return binary_search_position(i,v, needle);
   else if ( v[i] < needle)
-    return i + 1 + binary_search_position(&v[i+1], length - i - 1, needle); 
+    return i + 1 + binary_search_position(length - i - 1,&v[i+1], needle); 
 }
 
-int sparseMatrix::binary_search(const int * const v, int length, int needle) const {
-  int i = this->binary_search_position(v,length, needle);
+int sparseMatrix::binary_search(int length, const int * const v, int needle) const {
+  
+  ////////////////////
+  //
+  // binary search, return the position where element is placed if it
+  // exists or -1 otherwhise
+  //
+  ////////////////////
+  
+  
+  int i = this->binary_search_position(length,v, needle);
   if (i == length)
     return -1;
   if (v[i] == needle)
@@ -297,7 +273,16 @@ int sparseMatrix::binary_search(const int * const v, int length, int needle) con
   return -1;
 }
 
-void sparseMatrix::mergeSort(int * v, int length, int * const * const aux, int auxLength) const {
+void sparseMatrix::mergeSort(int length, int * v, int auxLength, int * const * const aux) const {
+  
+  ////////////////////
+  //
+  // merge sort, sort v.
+  //
+  // Moreover, it also sorts auxLength number of arrays in same order
+  // it did it with v.
+  //
+  ////////////////////
   
   if (length <= 1)
     return;
@@ -322,8 +307,8 @@ void sparseMatrix::mergeSort(int * v, int length, int * const * const aux, int a
     }
   }
 
-  mergeSort(a, l1, aux1, auxLength);
-  mergeSort(b, l2, aux2, auxLength);
+  mergeSort(l1, a, auxLength, aux1);
+  mergeSort(l2, b, auxLength, aux2);
 
   int i = 0, j = 0;
   while( i < l1 || j < l2)
@@ -618,16 +603,15 @@ int sparseMatrix::multiplyRows(int n1, int const * const c1, int const * const v
 }
 
 
-int sparseMatrix::numValuesInRow(int row) const {
-  if (this->rows[row] < 0 )
-    return 0;
-  int i = row+1;
-  while(i < this->numRows && this->rows[i] < 0)
-    i++;
-  if (i == this->numRows)
-    return this->numValues - this->rows[row];
+inline int sparseMatrix::numValuesInRow(int row) const {
+
+  ////////////////
+  //
+  // return the number of non null elements in a row
+  //
+  ////////////////
   
-  return this->rows[i] - this->rows[row];
+  return this->rows[row+1] - this->rows[row];
 
 }
 
@@ -643,8 +627,8 @@ sparseMatrix& sparseMatrix::swapRows(int swap1, int swap2) {
   int numValuesRow1 = this->numValuesInRow(swap1),
       numValuesRow2 = this->numValuesInRow(swap2);
       
-  int row1Starts = this->rowStartPosition(swap1),
-      row2Starts = this->rowStartPosition(swap2);
+  int row1Starts = this->rows[swap1],
+      row2Starts = this->rows[swap2];
       
   if (numValuesRow1 > numValuesRow2) {
   
@@ -670,6 +654,7 @@ sparseMatrix& sparseMatrix::swapRows(int swap1, int swap2) {
       this->values[i] = valuesRow1[i - row2Starts - numValuesRow2 + numValuesRow1];
       this->cols[i] = colsRow1[i - row2Starts - numValuesRow2 + numValuesRow1];
     }
+    
   } else if (numValuesRow1 < numValuesRow2) {
   
     int * valuesRow2 = (int *) malloc(numValuesRow2*sizeof(int)),
@@ -716,19 +701,8 @@ sparseMatrix& sparseMatrix::swapRows(int swap1, int swap2) {
   
   // update rows
 
-  for (int i = swap1 + 1 ; i < swap2 ; i++)
-    if ( this->rows[i] >= 0)
-      this->rows[i] += numValuesRow2 - numValuesRow1; 
-  
-  if (numValuesRow1 == 0 && numValuesRow2 > 0) {
-    this->rows[swap2] = -1;
-    this->rows[swap1] = row1Starts;
-  } else if (numValuesRow1 > 0 && numValuesRow2 == 0) {
-    this->rows[swap1] = -1;
-    this->rows[swap2] = row2Starts + numValuesRow2 - numValuesRow1;
-  } else if (numValuesRow1 > 0 && numValuesRow2 > 0) {
-    this->rows[swap2] += numValuesRow2 - numValuesRow1;
-  }
+  for (int i = swap1 + 1 ; i <= swap2 ; i++)
+    this->rows[i] += numValuesRow2 - numValuesRow1; 
 
   return *this;
 
@@ -743,14 +717,13 @@ sparseMatrix& sparseMatrix::swapCols(int col1, int col2) {
   if (col2 >= this->numCols || col1 < 0)
     return *this;
 
-  for (int i = 0 ; i < this->numRows; i++) 
-    if (this->rows[i] >= 0) {
-        
-      int nr = this->numValuesInRow(i);      
-      int colPos1 = this->binary_search_position(&this->cols[this->rows[i]], nr, col1);
+  for (int i = 0 ; i < this->numRows; i++) {
+    
+    int nr = this->numValuesInRow(i);      
+    int colPos1 = this->binary_search_position(nr, &this->cols[this->rows[i]], col1);
       
-      if ( colPos1 >= nr || this->cols[this->rows[i] + colPos1] != col1) { // col1 does not exist
-        int colPos2 = this->binary_search(&this->cols[this->rows[i]], nr, col2);
+    if ( colPos1 >= nr || this->cols[this->rows[i] + colPos1] != col1) { // col1 does not exist
+        int colPos2 = this->binary_search(nr, &this->cols[this->rows[i]], col2);
         if (colPos2 >= 0) { // col 2 exists
           int colValue2 = this->values[this->rows[i] + colPos2];
           for (int j = colPos2; j > colPos1; j--) {
@@ -764,7 +737,7 @@ sparseMatrix& sparseMatrix::swapCols(int col1, int col2) {
         
       } else { // col1 exists
           
-        int colPos2 = this->binary_search_position(&this->cols[this->rows[i]], nr, col2);
+        int colPos2 = this->binary_search_position(nr, &this->cols[this->rows[i]], col2);
         
         if ( colPos2 >= nr || this->cols[this->rows[i] + colPos2] != col2) { // col2 does not exist
           int colValue1 = this->values[this->rows[i] + colPos1];
@@ -789,35 +762,33 @@ sparseMatrix& sparseMatrix::swapCols(int col1, int col2) {
 sparseMatrix& sparseMatrix::deleteCols(int n, int * cols) {
   
   int numElementsDeleted = 0;
+  this->mergeSort(n,cols);
   
-  this->mergeSort(cols,n);
-  for (int i = 0; i < this->numRows; i++)
-    if (this->rows[i] >= 0) {
-      int numValuesInThisRow = this->numValuesInRow(i);
-      this->rows[i] -= numElementsDeleted;
-      for (int j = 0, k = 0; j < numValuesInThisRow;)
-        if (k < n && this->cols[this->rows[i]+j] == cols[k]) {
-          // erase element
-          for ( int l = this->rows[i]+j+1; l < this->numValues-numElementsDeleted; l++) {
-            this->values[l-1] = this->values[l];
-            this->cols[l-1] = this->cols[l];
-          }
-          // update counters
-          numValuesInThisRow--;
-          numElementsDeleted++;
-          // advance 
-          k++;
-        } else if (k >= n || this->cols[this->rows[i]+j] < cols[k]) {
-          this->cols[this->rows[i]+j] -= k;
-          j++;
-        } else if (k < n && this->cols[this->rows[i]+j] > cols[k]) {
-          k++;
-    }
+  for (int i = 0; i < this->numRows; i++) {
+    int numValuesInThisRow = this->numValuesInRow(i);
+    this->rows[i] -= numElementsDeleted;
+    for (int j = 0, k = 0; j < numValuesInThisRow;)
+      if (k < n && this->cols[this->rows[i]+j] == cols[k]) {
+        // erase element
+        for ( int l = this->rows[i]+j+1; l < this->numValues - numElementsDeleted; l++) {
+          this->values[l-1] = this->values[l];
+          this->cols[l-1] = this->cols[l];
+        }
+        // update counters
+        numValuesInThisRow--;
+        numElementsDeleted++;
+        // advance 
+        k++;
+      } else if (k >= n || this->cols[this->rows[i]+j] < cols[k]) {
+        this->cols[this->rows[i]+j] -= k;
+        j++;
+      } else if (k < n && this->cols[this->rows[i]+j] > cols[k]) {
+        k++;
+      }
         
-      if (numValuesInThisRow == 0)
-        this->rows[i] = -1;
     }
 
+  this->row[this->numRows] -= numElementsDeleted;
   this->numValues -= numElementsDeleted;
   this->numCols -= n;
   return *this;
@@ -826,6 +797,33 @@ sparseMatrix& sparseMatrix::deleteCols(int n, int * cols) {
 sparseMatrix& sparseMatrix::deleteCol(int col) {
   return this->deleteCols(1,&col);
 }
+
+sparseMatrix& sparseMatrix::eye(int r, int c) {
+  this->numRows = r;
+  this->numCols = c;
+  this->numValues = min(r,c);
+  this->values = (int *) malloc(this->numValues*sizeof(int));
+  this->cols = (int *) malloc(this->numValues*sizeof(int));
+  this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
+  
+  for (int i = 0; i < this->numValues; i++) {
+    this->values[i] = 1;
+    this->cols[i] = i;
+  }
+  
+  for (int i = 0; i <this->numRows; i++)
+    if (i < this->numValues)
+      this->rows[i] = i;
+    else
+      this->rows[i] = -1;
+  
+  return *this;
+}
+
+sparseMatrix& sparseMatrix::eye(int n) {
+  return eye(n,n);
+}
+
 
 int sparseMatrix::emptyRowsToBottom(int * rowPerm) {
     
@@ -864,32 +862,6 @@ int sparseMatrix::emptyRowsToBottom(int * rowPerm) {
     return numEmptyRows;
 }
 
-sparseMatrix& sparseMatrix::eye(int r, int c) {
-  this->numRows = r;
-  this->numCols = c;
-  this->numValues = min(r,c);
-  this->values = (int *) malloc(this->numValues*sizeof(int));
-  this->cols = (int *) malloc(this->numValues*sizeof(int));
-  this->rows = (int *) malloc(this->numRows*sizeof(int));
-  
-  for (int i = 0; i < this->numValues; i++) {
-    this->values[i] = 1;
-    this->cols[i] = i;
-  }
-  
-  for (int i = 0; i <this->numRows; i++)
-    if (i < this->numValues)
-      this->rows[i] = i;
-    else
-      this->rows[i] = -1;
-  
-  return *this;
-}
-
-sparseMatrix& sparseMatrix::eye(int n) {
-  return eye(n,n);
-}
-
 sparseMatrix& sparseMatrix::transpose() {
   // from format1 to format2
   // O(min(numValues,numRows))
@@ -916,7 +888,7 @@ sparseMatrix& sparseMatrix::transpose() {
   aux[0] = this->values;
   aux[1] = this->cols;
   
-  this->mergeSort(this->rows, this->numValues,aux,2);
+  this->mergeSort(this->numValues,this->rows,2,aux);
 
   // from format2 to format1
   // O(max(numValues,numRows))
@@ -1099,7 +1071,7 @@ sparseMatrix sparseMatrix::operator[](int row) const {
     sparseMatrix M(1,this->numCols,0,0,0, &rows);
     return M;  
   } else if ( this->numRows == 1 && this->numValues > 0 ) {
-    int pos = this->binary_search(this->cols, this->numValues, row);
+    int pos = this->binary_search(this->numValues, this->cols, row);
     if (pos < 0) {
       // return 1x1 matrix with 0 value
       int rows = -1;
@@ -1124,7 +1096,7 @@ sparseMatrix sparseMatrix::operator[](int row) const {
 int sparseMatrix::operator()(int row, int col) const {
 
   if (this->numValuesInRow(row) > 0) {
-    int pos = this->binary_search(&(this->cols[this->rows[row]]), this->numValuesInRow(row), col);
+    int pos = this->binary_search(this->numValuesInRow(row), &(this->cols[this->rows[row]]), col);
     if (pos < 0)
       return 0;
     else
