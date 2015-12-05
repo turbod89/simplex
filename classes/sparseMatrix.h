@@ -66,6 +66,7 @@ class sparseMatrix {
     sparseMatrix& read(istream& in);
     const sparseMatrix& print(ostream& out) const;
     const sparseMatrix& print_full(ostream& out) const;
+    const sparseMatrix& print_octave(ostream& out) const;
     const sparseMatrix& getFullValues(int * a) const;
     inline int numValuesInRow(int row) const;
     sparseMatrix& swapRows(int row1, int row2);

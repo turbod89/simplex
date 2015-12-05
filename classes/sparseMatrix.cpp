@@ -212,6 +212,27 @@ const sparseMatrix& sparseMatrix::print_full(ostream& out) const {
   return *this;
 }
 
+const sparseMatrix& sparseMatrix::print_octave(ostream& out) const {
+
+  out  << "[";
+
+  for (int i = 0, nextValue = 0; i < this->numRows; i++) {
+    for ( int j = 0; j < this->numCols ; j++)
+      if (nextValue < this->rows[i+1] && this->cols[nextValue] == j) {
+        out << " " << this->values[nextValue];
+        nextValue++;
+      } else {
+        out << " 0";
+      }
+    if (i < this->numRows -1)
+      out << ";" << endl;
+  }
+  
+  out << "]" << endl;
+
+  return *this;
+}
+
 const sparseMatrix& sparseMatrix::getFullValues(int * a) const {
   
   ////////////////
