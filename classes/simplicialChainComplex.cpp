@@ -370,8 +370,8 @@ simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& 
   int * A = (int *) malloc((i+1)*M.length()*sizeof(int));
   
   int * values , *rows, *cols;
-  int numCols, numRows, numValues;
-  M.decompose(numRows,numCols,numValues,&values,&cols,&rows);
+  int numCols = M.size(2), numRows = M.size(1), numValues = M.length();
+  M.decompose(&values,&cols,&rows);
   
   for (int j = 0; j < numValues; j++)
     memcpy(&A[(i+1)*j],&(this->P[i].values()[(i+1)*cols[j]]),(i+1)*sizeof(int));

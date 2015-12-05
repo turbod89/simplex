@@ -43,18 +43,18 @@ sparseMatrix::sparseMatrix(int * M, int r , int c) {
     this->numValues = cnt;
     this->values = (int *) malloc(cnt*sizeof(int));
     this->cols = (int *) malloc(cnt*sizeof(int));
-    this->rows = (int *) malloc(r*sizeof(int));
+    this->rows = (int *) malloc((r+1)*sizeof(int));
 
     this->rows[0] = 0;
     for (int i = 0; i < r; i++) {
+      this->rows[i+1] = this->rows[i];
       for (int j = 0; j < c; j++) {
         if (M[i*c + j] != 0) {
-          this->cols[cnt] = j;
-          this->values[cnt] = M[i*c + j];
-          this->rows[i]++;
+          this->cols[this->rows[i+1]] = j;
+          this->values[this->rows[i+1]] = M[i*c + j];
+          this->rows[i+1]++;
         }
       }
-      this->rows[i+1] = this->rows[i];
     }
 
 }
