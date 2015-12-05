@@ -72,7 +72,7 @@ class sparseMatrix {
     sparseMatrix& deleteCol(int col);
     sparseMatrix& eye(int r, int c);
     sparseMatrix& eye(int n);
-    int emptyRowsToBottom(int * rowPerm);
+    int emptyRowsToBottom(sparseMatrix& rowPerm);
     sparseMatrix& transpose();
     sparseMatrix& multiplyByTransposed(sparseMatrix const & M1,sparseMatrix const & M2);
     sparseMatrix operator*(sparseMatrix M) const;

@@ -811,7 +811,7 @@ sparseMatrix& sparseMatrix::eye(int r, int c) {
     this->cols[i] = i;
   }
   
-  for (int i = 0; i < this->numRows; i++)
+  for (int i = 0; i < this->numRows + 1; i++)
     if (i < this->numValues)
       this->rows[i] = i;
     else
@@ -845,19 +845,19 @@ int sparseMatrix::emptyRowsToBottom(sparseMatrix & rowPerm) {
     int * emptyRows = (int *) malloc(numEmptyRows*sizeof(int));
 
     for (int i = 0, cnt = 0; i + cnt < this->numRows; )
-        if (this->rows[i+cnt] < 0 ) {
-            emptyRows[cnt] = i+cnt;
-            cnt++;
-        } else {
-            this->rows[i] = this->rows[i+cnt];
-            rowPerm[i] = v[i+cnt];
-             i++;
-        }
-    
+      if (this->numValuesInRow(i+cnt) == 0 ) {
+        emptyRows[cnt] = i+cnt;
+        cnt++;
+      } else {
+        this->rows[i] = this->rows[i+cnt];
+        rowPerm[i] = v[i+cnt];
+        i++;
+      }
+  
     // setting empty rows to bottom
     for (int i = 0; i < numEmptyRows; i++) {
-        rowPerm[this->numRows - numEmptyRows + i] = v[emptyRows[i]];
-        this->rows[this->numRows - numEmptyRows + i] = -1;
+        //rowPerm.cols[this->numRows - numEmptyRows + i] = rv[emptyRows[i]];
+        this->rows[this->numRows - numEmptyRows + i] = this->numValues;
     }
 
     return numEmptyRows;
@@ -913,18 +913,18 @@ sparseMatrix& sparseMatrix::transpose() {
 
 sparseMatrix& sparseMatrix::multiplyByTransposed(sparseMatrix const & M1,sparseMatrix const & M2) {
   
-  int numRows1, numCols1, numValues1, *rows1, *cols1, *values1;
-  int numRows2, numCols2, numValues2, *rows2, *cols2, *values2;
+  int numRows1 = M1.numRows, numCols1 = M1.numCols, numValues1 =  M1.numValues, *rows1, *cols1, *values1;
+  int numRows2 = M2.numRows, numCols2 = M2.numCols, numValues2 =  M2.numValues, *rows2, *cols2, *values2;
   
-  M1.decompose(numRows1, numCols1, numValues1, &values1, &cols1, &rows1);
-  M2.decompose(numRows2, numCols2, numValues2, &values2, &cols2, &rows2);
+  M1.decompose(&values1, &cols1, &rows1);
+  M2.decompose(&values2, &cols2, &rows2);
 
   int numNonNullRows1 = 0, numNonNullRows2 = 0;
   for (int i = 0; i<numRows1; i++)
-    if (rows1[i] >= 0)
+    if (M1.numValuesInRow(i) > 0)
       numNonNullRows1++;
   for (int i = 0; i<numRows2; i++)
-    if (rows2[i] >= 0)
+    if (M2.numValuesInRow(i) > 0)
       numNonNullRows2++;
   
   this->numRows = M1.size(1);
@@ -1116,9 +1116,9 @@ sparseMatrix& sparseMatrix::vcat(const sparseMatrix& M) {
     this->cols = (int*) realloc(this->cols, (this->numValues + M.length())*sizeof(int));
     this->rows = (int*) realloc(this->rows, (this->numRows + M.size(1))*sizeof(int));
     
-    int numCols,numRows,numValues;
+    int numCols = M.numCols, numRows = M.numRows, numValues = M.numValues;
     int  * newValues = &(this->values[this->numValues]), * newCols = &(this->cols[this->numValues]),* newRows = &(this->rows[this->numRows]);
-    M.decompose(numRows,numCols,numValues,&newValues,&newCols, &newRows);
+    M.decompose(&newValues,&newCols, &newRows);
     
     for (int i = 0; i < numRows; i++)
         if (this->rows[this->numRows + i] >= 0)
@@ -1138,9 +1138,9 @@ sparseMatrix& sparseMatrix::dcat(const sparseMatrix& M) {
     this->cols = (int*) realloc(this->cols, (this->numValues + M.length())*sizeof(int));
     this->rows = (int*) realloc(this->rows, (this->numRows + M.size(1))*sizeof(int));
     
-    int numCols,numRows,numValues;
+    int numCols = M.numCols,numRows = M.numRows, numValues =  M.numValues;
     int  * newValues = &(this->values[this->numValues]), * newCols = &(this->cols[this->numValues]),* newRows = &(this->rows[this->numRows]);
-    M.decompose(numRows,numCols,numValues,&newValues,&newCols, &newRows);
+    M.decompose(&newValues,&newCols, &newRows);
     
     for (int i = 0; i < numRows; i++)
         if (this->rows[this->numRows + i] >= 0)
