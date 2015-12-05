@@ -29,6 +29,7 @@ class sparseMatrix {
     int * cols;
     int * rows;
     
+    void swap(int &a, int &b) const;
     int binary_search_position(int length, const int * const v, int needle) const;
     int binary_search(int length, const int * const v, int needle) const;
     void mergeSort(int length, int * v,int auxLength = 0, int * const * const aux = NULL) const;
@@ -40,6 +41,7 @@ class sparseMatrix {
     void multiply(int a, int n, int * const v) const;
     int multiply(int n, int const * const v, int const * const w) const;
     int multiplyRows(int n1, int const * const c1, int const * const v1, int n2, int const * const c2, int const * const v2) const;
+    int sumRows(int n1, int const * const c1, int const * const v1, int n2, int const * const c2, int const * const v2, int * const c3, int * const v3) const;
 
     
   public:
