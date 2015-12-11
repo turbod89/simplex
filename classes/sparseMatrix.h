@@ -24,7 +24,6 @@ class sparseMatrix {
 
     int numCols;
     int numRows;
-    int numValues;
     int * values;
     int * cols;
     int * rows;
@@ -47,7 +46,7 @@ class sparseMatrix {
   public:
   
     sparseMatrix();
-    sparseMatrix(int r, int c, int v,const int * const values,const int * const cols,const int * const rows);
+    sparseMatrix(int r, int c,const int * const rows,const int * const cols,const int * const values);
     sparseMatrix(int r, int c);
     sparseMatrix(int * M, int r, int c);
     sparseMatrix(const sparseMatrix& M);
@@ -60,9 +59,10 @@ class sparseMatrix {
     const int * getCols() const;
     int * getCols();
     int size(int i) const;
-    int length() const;
+    inline int length() const;
     const sparseMatrix& decompose(int ** values, int ** cols, int ** rows) const;
-    const sparseMatrix& format2(int ** rows = NULL, int ** cols = NULL, int ** values = NULL) const;
+    sparseMatrix& read_index_format(int numRows, int numCols, int length, int * rows, int * cols, int * values, bool sorted = false);
+    const sparseMatrix& index_format(int * rows = NULL, int * cols = NULL, int * values = NULL) const;
     sparseMatrix& read(istream& in);
     const sparseMatrix& print(ostream& out) const;
     const sparseMatrix& print_full(ostream& out) const;
@@ -71,22 +71,16 @@ class sparseMatrix {
     inline int numValuesInRow(int row) const;
     sparseMatrix& swapRows(int row1, int row2);
     sparseMatrix& swapCols(int col1, int col2);
-    sparseMatrix& deleteCols(int n, int * cols);
-    sparseMatrix& deleteCol(int col);
     sparseMatrix& eye(int r, int c);
     sparseMatrix& eye(int n);
-    int emptyRowsToBottom(sparseMatrix& rowPerm);
-    sparseMatrix& transpose();
+    sparseMatrix transpose() const;
     sparseMatrix& multiplyByTransposed(sparseMatrix const & M1,sparseMatrix const & M2);
-    sparseMatrix operator*(sparseMatrix M) const;
+    sparseMatrix operator*(const sparseMatrix & M) const;
     sparseMatrix operator*(int a) const;
     sparseMatrix operator+(const sparseMatrix& M) const;
     sparseMatrix operator[](int row) const;
     int operator()(int row, int col) const;
-    sparseMatrix& vcat(const sparseMatrix& M);
-    sparseMatrix& dcat(const sparseMatrix& M);
     const sparseMatrix& LDU_efficient(sparseMatrix& L, sparseMatrix& D, sparseMatrix& U, sparseMatrix& rowPerm, sparseMatrix& colPerm) const;
-    const sparseMatrix& LDU(sparseMatrix& L, sparseMatrix& D, sparseMatrix& U, sparseMatrix& rowPerm, sparseMatrix& colPerm) const;
     sparseMatrix ker() const;
 };
 
