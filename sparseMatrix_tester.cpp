@@ -33,5 +33,20 @@ int main (int argc, char * argv[]) {
     (M*N).print_octave(cout);
   }
   
+  sparseMatrix L, D, U, P, Q;
+  
+  cout << "Calculating LDU of first matrix:" << endl;
+  M.LDU_efficient(L,D,U,P,Q);
+  cout << "L = ";
+  L.print_octave(cout);
+  cout << "D = ";
+  D.print_octave(cout);
+  cout << "U = ";
+  U.print_octave(cout);
+  cout << "P = ";
+  P.print_octave(cout);
+  cout << "Q = ";
+  Q.print_octave(cout);
+  
   return 0;
 }

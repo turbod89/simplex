@@ -61,8 +61,9 @@ class sparseMatrix {
     int size(int i) const;
     inline int length() const;
     const sparseMatrix& decompose(int ** values, int ** cols, int ** rows) const;
-    sparseMatrix& read_index_format(int numRows, int numCols, int length, int * rows, int * cols, int * values, bool sorted = false);
+    sparseMatrix& read_index_format(int numRows, int numCols, int length, int const * rows, int const * cols, int const * values, bool sorted = false);
     const sparseMatrix& index_format(int * rows = NULL, int * cols = NULL, int * values = NULL) const;
+    sparseMatrix& removeZeros();
     sparseMatrix& read(istream& in);
     const sparseMatrix& print(ostream& out) const;
     const sparseMatrix& print_full(ostream& out) const;
@@ -83,6 +84,11 @@ class sparseMatrix {
     const sparseMatrix& LDU_efficient(sparseMatrix& L, sparseMatrix& D, sparseMatrix& U, sparseMatrix& rowPerm, sparseMatrix& colPerm) const;
     sparseMatrix ker() const;
 };
+
+inline int sparseMatrix::length() const {
+  return this->rows[this->numRows];
+}
+
 
 #endif
     

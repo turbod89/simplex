@@ -12,10 +12,10 @@ sparseMatrix::sparseMatrix(int r, int c, const int * const rows, const int * con
   this->rows = (int *) malloc((r+1)*sizeof(int));
   memcpy(this->rows,rows,(r+1)*sizeof(int));
 
-  this->values = (int *) malloc(this->length()*sizeof(int));
   this->cols = (int *) malloc(this->length()*sizeof(int));
-  memcpy(this->values,values,this->length()*sizeof(int));
   memcpy(this->cols,cols,this->length()*sizeof(int));
+  this->values = (int *) malloc(this->length()*sizeof(int));
+  memcpy(this->values,values,this->length()*sizeof(int));
 }
 
 sparseMatrix::sparseMatrix(int r , int c) {
@@ -68,15 +68,17 @@ sparseMatrix::~sparseMatrix(){
 }
 
 sparseMatrix& sparseMatrix::operator=(const sparseMatrix& M) {
+
   this->numCols = M.numCols;
   this->numRows = M.numRows;
 
+  this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
+  memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
+  
   this->values = (int *) malloc(M.length()*sizeof(int));
   this->cols = (int *) malloc(M.length()*sizeof(int));
-  this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
   memcpy(this->values,M.values,M.length()*sizeof(int));
   memcpy(this->cols,M.cols,M.length()*sizeof(int));
-  memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
   
   return *this;
 }
@@ -114,10 +116,6 @@ int sparseMatrix::size(int i) const {
   return 0;
 }
 
-inline int sparseMatrix::length() const {
-  return this->rows[this->numRows];
-}
-
 const sparseMatrix& sparseMatrix::decompose(int ** values, int ** cols, int ** rows) const {
   *values = (int *) malloc(this->length()*sizeof(int));
   *cols = (int *) malloc(this->length()*sizeof(int));
@@ -127,31 +125,39 @@ const sparseMatrix& sparseMatrix::decompose(int ** values, int ** cols, int ** r
   memcpy(*rows,this->rows,(this->numRows+1)*sizeof(int));
   return *this;
 }
-sparseMatrix& sparseMatrix::read_index_format(int numRows, int numCols, int length, int * rows, int * cols, int * values, bool sorted) {
+sparseMatrix& sparseMatrix::read_index_format(int numRows, int numCols, int length, int const * rows, int const * cols, int const * values, bool sorted) {
   
+  int * rows2 = (int *) malloc(length*sizeof(int));
+  int * cols2 = (int *) malloc(length*sizeof(int));
+  int * values2 = (int *) malloc(length*sizeof(int));
+
+  memcpy(rows2,rows,length*sizeof(int));
+  memcpy(cols2,cols,length*sizeof(int));
+  memcpy(values2,values,length*sizeof(int));
+
   if ( !sorted) {
     // sorting
+    
     int ** a = (int **) malloc(2*sizeof(int *));
-    a[0] = rows;
-    a[1] = values;
-    this->mergeSort(length, cols, 2, a);
-    a[0] = cols;
-    this->mergeSort(length, rows, 2, a);
+    a[0] = rows2;
+    a[1] = values2;
+    this->mergeSort(length, cols2, 2, a);
+    a[0] = cols2;
+    this->mergeSort(length, rows2, 2, a);
   }
-  
+
   int * crows = (int *) malloc((numRows + 1)*sizeof(int));
   
   crows[0] = 0;
-  for (int i = 0, v = 0; i < numRows && v < length; v++) {
-      while ( i < rows[v]) {
-        crows[i+2] = crows[i+1];
-        i++;
-      }
+  for (int i = 0, v = 0; i < numRows; i++) {
+    crows[i+1] = crows[i];
+    while (v < length && i == rows2[v]) {
+      v++;
       crows[i+1]++;
+    }
   }
-  
-  *this = sparseMatrix(numRows,numCols,crows,cols,values);
-  
+
+  *this = sparseMatrix(numRows,numCols,crows,cols2,values2);
   return *this;
 }
 const sparseMatrix& sparseMatrix::index_format(int * rows, int * cols, int * values) const {
@@ -171,6 +177,28 @@ const sparseMatrix& sparseMatrix::index_format(int * rows, int * cols, int * val
   return *this;
 }
 
+sparseMatrix& sparseMatrix::removeZeros() {
+  
+  for (int v =0, r = 0, numValues = this->length(), numZeros = 0; v < numValues || r < this->numRows;) {
+    while (this->rows[r+1] <= v) {
+      r++;
+      this->rows[r+1] -= numZeros;
+    }
+    this->values[v] = this->values[v+numZeros];
+    this->cols[v] = this->cols[v+numZeros];
+    if (this->values[v] == 0) {
+      numZeros++;
+      numValues--;
+      this->rows[r+1]--;
+    } else
+      v++;
+  }
+  
+  this->cols = (int *) realloc(this->cols,this->length()*sizeof(int));
+  this->values = (int *) realloc(this->values,this->length()*sizeof(int));
+  
+  return *this;
+}
 
 sparseMatrix& sparseMatrix::read(istream& in) {
 
@@ -859,53 +887,39 @@ sparseMatrix& sparseMatrix::eye(int n) {
 }
 
 sparseMatrix sparseMatrix::transpose() const {
-
   // to index format
   int * rows = (int *) malloc(this->length()*sizeof(int));
   this->index_format(rows);
-  
   // swaping & to rcompresed format
   sparseMatrix M;
   M.read_index_format(this->numCols,this->numRows,this->length(),this->cols,rows,this->values);
-  
   return M;
-  
-
 }
 
 sparseMatrix& sparseMatrix::multiplyByTransposed(sparseMatrix const & M1,sparseMatrix const & M2) {
   
-  // TODO : Per a que necesito fer una copia?
-  
-M1.print_octave(cerr);
-M2.print_octave(cerr);
-  
-  int numRows1 = M1.numRows, numCols1 = M1.numCols, *rows1, *cols1, *values1;
-  int numRows2 = M2.numRows, numCols2 = M2.numCols, *rows2, *cols2, *values2;
-  
-  M1.decompose(&values1, &cols1, &rows1);
-  M2.decompose(&values2, &cols2, &rows2);
-
+  // conta cota superior del nombre de valors
   int numNonNullRows1 = 0, numNonNullRows2 = 0;
-  for (int i = 0; i<numRows1; i++)
+  for (int i = 0; i<M1.size(1); i++)
     if (M1.numValuesInRow(i) > 0)
       numNonNullRows1++;
-  for (int i = 0; i<numRows2; i++)
+  for (int i = 0; i<M2.size(1); i++)
     if (M2.numValuesInRow(i) > 0)
       numNonNullRows2++;
   
   this->numRows = M1.size(1);
   this->numCols = M2.size(1); // since we multiply by its transposed
-  this->values = (int *) malloc(this->length()*sizeof(int));
-  this->cols = (int *) malloc(this->length()*sizeof(int));
+  int numEstimatedValues = numNonNullRows1*numNonNullRows2;
+  this->values = (int *) malloc(numEstimatedValues*sizeof(int));
+  this->cols = (int *) malloc(numEstimatedValues*sizeof(int));
   this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
 
   
   this->rows[0] = 0;
-  for (int i = 0; i < numRows1; i++) {
+  for (int i = 0; i < M1.size(1); i++) {
     this->rows[i+1] = this->rows[i];
-    for (int j = 0; j < numRows2; j++) {
-      int s = this->multiplyRows(M1.numValuesInRow(i),&cols1[rows1[i]],&values1[rows1[i]],M2.numValuesInRow(j),&cols2[rows2[j]],&values2[rows2[j]]);
+    for (int j = 0; j < M2.size(1); j++) {
+      int s = this->multiplyRows(M1.numValuesInRow(i),&M1.cols[M1.rows[i]],&M1.values[M1.rows[i]],M2.numValuesInRow(j),&M2.cols[M2.rows[j]],&M2.values[M2.rows[j]]);
       if (s != 0) {
         this->values[this->rows[i+1]] = s;
         this->cols[this->rows[i+1]] = j;
@@ -913,8 +927,9 @@ M2.print_octave(cerr);
       }
     }
   }
-   
-  // TODO: resize cols and values arrays
+
+  this->cols = (int *) realloc(this->cols,this->length()*sizeof(int));
+  this->values = (int *) realloc(this->values,this->length()*sizeof(int));
   
   return *this;
  
@@ -953,16 +968,17 @@ sparseMatrix sparseMatrix::operator+(const sparseMatrix& M) const {
   
   int numValues = 0;
   
+  rows[0] = 0;
   for (int i = 0; i < this->numRows; i++) {
     rows[i] = numValues;
     numValues += this->sumRows(this->numValuesInRow(i), &this->cols[this->rows[i]], &this->values[this->rows[i]],
                                M.numValuesInRow(i), &M.cols[M.rows[i]], &M.values[M.rows[i]],
-                               &cols[numValues], &rows[numValues]);
+                               &cols[numValues], &values[numValues]);
+                               
+    rows[i+1] = rows[i] + numValues;
   }
-  
-  rows[this->numRows] = numValues;
-  
-  return sparseMatrix(this->numRows,this->numCols,rows,cols,values);
+
+  return sparseMatrix(max(this->numRows,M.numRows),this->numCols,rows,cols,values);
 }
 
 sparseMatrix sparseMatrix::operator[](int row) const {
@@ -1031,12 +1047,19 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   //
   ////////////////////////////////////
   
-  sparseMatrix M(*this);
-  
+  // set variables
+  sparseMatrix M(*this);  
   int RANK_MAX = min(M.numCols, M.numRows);
   
   L = sparseMatrix(RANK_MAX,M.numRows); // L is transposed for convenience
+  L.rows[0] = 0;
+  L.cols = (int *) malloc((RANK_MAX*M.numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  L.values = (int *) malloc((RANK_MAX*M.numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
   U = sparseMatrix(RANK_MAX,M.numCols);
+  U.rows[0] = 0;
+  U.cols = (int *) malloc((RANK_MAX*M.numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  U.values = (int *) malloc((RANK_MAX*M.numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  
   int * seq = (int *) malloc((max(this->numCols,this->numRows) + 1)*sizeof(int));
   int * ones = (int *) malloc((max(this->numCols,this->numRows) + 1)*sizeof(int));
   
@@ -1045,10 +1068,12 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     ones[i] = 1;
   }
   
-  rowPerm = sparseMatrix(this->numRows, this->numRows,  seq,seq,ones);
-  colPerm = sparseMatrix(this->numCols, this->numCols,  seq,seq,ones);
+  rowPerm = sparseMatrix(this->numRows, this->numRows,seq,seq,ones);
+  colPerm = sparseMatrix(this->numCols, this->numCols,seq,seq,ones);
   
   int * diagonal = (int *) malloc(RANK_MAX*sizeof(int));
+  
+  // start algorimth
   
   int acum = 1;
   int k = 0;
@@ -1056,7 +1081,7 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   while (k < RANK_MAX && M.length() > 0) {
     // take the non-zero element
     int r = 0, c = 0;
-    while (r < M.numRows && M.rows[r] < 0)
+    while (r < M.numRows && M.numValuesInRow(r) == 0)
       r++; 
     c = M.cols[M.rows[r]];
     // put it on (k,k)
@@ -1066,19 +1091,16 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     rowPerm.swapCols(k,r);
     colPerm.swapRows(k,c);
   
-    sparseMatrix M_trans = M;
-    M_trans.transpose();
+    sparseMatrix M_trans = M.transpose();
   
-    //algorimth
+    //algorimth itself
+    // U matrix
     int M_numValuesInRow = M.numValuesInRow(k);
-    U.values = (int *) realloc(U.values,(U.length() + M_numValuesInRow)*sizeof(int));
-    U.cols = (int *) realloc(U.cols,(U.length() + M_numValuesInRow)*sizeof(int));
-    U.rows[k] = U.length();
-    for (int i = 0; i < M_numValuesInRow; i++) {
-      U.cols[U.rows[k] + i] = M.cols[M.rows[k] + i];
-      U.values[U.rows[k] + i] = M.values[M.rows[k] + i];
-    }
+    U.rows[k+1] = U.rows[k] + M_numValuesInRow;
+    memcpy(&U.cols[U.rows[k]], &M.cols[M.rows[k]],M_numValuesInRow*sizeof(int));
+    memcpy(&U.values[U.rows[k]], &M.values[M.rows[k]],M_numValuesInRow*sizeof(int));
 
+    // diagonal
     int M_numValuesInCol = M_trans.numValuesInRow(k);
     int g = this->gcd(M_numValuesInCol,&M_trans.values[M_trans.rows[k]]);
 if (g == 0) {
@@ -1090,22 +1112,38 @@ if (g == 0) {
 }
     int d = M.values[M.rows[k]] / g;
 
-    L.values = (int *) realloc(L.values,(L.length() + M_numValuesInCol)*sizeof(int));
-    L.cols = (int *) realloc(L.cols,(L.length() + M_numValuesInCol)*sizeof(int));
-    L.rows[k] = L.length();
+    // L matrix
+    L.rows[k+1] = L.rows[k] + M_numValuesInCol;
+    memcpy(&L.cols[L.rows[k]],&M_trans.cols[M_trans.rows[k]],M_numValuesInCol*sizeof(int));
     for (int i = 0; i < M_numValuesInCol; i++) {
-      L.cols[L.rows[k] + i] = M_trans.cols[M.rows[k] + i];
-      L.values[L.rows[k] + i] = M_trans.values[M.rows[k] + i]/g;
+      L.values[L.rows[k] + i] = M_trans.values[M_trans.rows[k] + i]/g;
     }
-  
+    
+    // Diagonal
+
     acum *= d;
     diagonal[k] = acum;
+
+    // simule (efficiently) M = M*d + ((L[k].transpose()*(-1))*(U[k]));
+    for (int v = 0, r = 0, lc = 0, rc = 0; v < M.length(); v++) {
+      while (M.rows[r+1] <= v)
+        r++;
+      while (lc < L.numValuesInRow(k) && L.cols[L.rows[k] + lc] < r)
+        lc++;
+      while (rc < U.numValuesInRow(k) && U.cols[U.rows[k] + rc] < M.cols[v])
+        rc++;
+      
+      int lu = 0;
+      
+      if (   lc < L.numValuesInRow(k) && L.cols[L.rows[k] + lc] == r
+          && rc < U.numValuesInRow(k) && U.cols[U.rows[k] + rc] == M.cols[v])
+        lu = L.values[L.rows[k] + lc] * U.values[U.rows[k] + rc];
+      
+      M.values[v] = d*M.values[v] - lu;
+    }
+    M.removeZeros();
+      
     
-    sparseMatrix A = L[k]*(-1);
-    
-    A.transpose();
-    
-    M = M*d + A*U[k];
     
     // iteration
 
@@ -1117,7 +1155,7 @@ if (g == 0) {
   U.numRows = k;
   D = sparseMatrix(k,k,seq,seq,diagonal);
 
-  L.transpose();
+  L = L.transpose();
   return *this;
 }
 
