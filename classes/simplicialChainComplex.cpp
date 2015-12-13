@@ -136,8 +136,8 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
     int numValues = (i+2)*this->P[i+1].length();
     int * values = (int *) malloc(numValues*sizeof(int));
     int * cols = (int *) malloc(numValues*sizeof(int));
-    int * rows = (int *) malloc(this->P[i+1].length()*sizeof(int));
-
+    int * rows = (int *) malloc((this->P[i+1].length()+1)*sizeof(int));
+    
     for (int j = 0; j < this->P[i+1].length(); j++) {
       
       int * signs = (int *) malloc((i+2)*sizeof(int));
@@ -158,12 +158,13 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
           cerr << "searched in:" << endl;
           this->P[i].print(cerr);
         }
-      
-      rows[j] = (i+2)*j;
-      
     }
-    this->d[i] = sparseMatrix (this->P[i+1].length(),this->P[i].length(),numValues,values,cols,rows);
-    this->d[i].transpose();
+
+    for (int j = 0; j <= this->P[i+1].length(); j++)
+      rows[j] = (i+2)*j;
+
+    this->d[i] = sparseMatrix (this->P[i+1].length(),this->P[i].length(),rows,cols,values);
+    this->d[i] = this->d[i].transpose();
   }
 
   return *this;
@@ -280,14 +281,16 @@ int simplicialChainComplex::eulerCharacteristic() const {
 sparseMatrix simplicialChainComplex::fundamentalClass() const {
 	int * values = (int *) malloc(this->P[this->n -1].length() * sizeof(int));
 	int * rows = (int *) malloc(this->P[this->n -1].length() * sizeof(int));
-	int cols = 0;
+	int * cols = (int *) malloc(2*sizeof(int));
 	
+  cols[0] = 0;
 	for (int i = 0; i < this->P[this->n -1].length(); i++) {
 		values[i] = this->orientation[i];
 		rows[i] = i;
 	}
+  cols[1] = this->P[this->n -1].length();
 	
-	return sparseMatrix(1,this->P[n-1].length(),this->P[n-1].length(),values,rows,&cols);
+	return sparseMatrix(1,this->P[n-1].length(),cols,rows,values);
 	
 }
 
@@ -340,7 +343,7 @@ sparseMatrix simplicialChainComplex::adjacencyMatrix(int i, int j) const {
     M.getValues()[l] = 1;
     
   if (i == j-1)
-    return M; // we save one matrix mult
+    return M; // we save one matrix multiplication
   
   M = this->adjacencyMatrix(i,j-1)*M;
  
@@ -356,8 +359,7 @@ sparseMatrix simplicialChainComplex::boundary(int i,const sparseMatrix& M) const
     return sparseMatrix(0,0);
 
   sparseMatrix A;
-  A.multiplyByTransposed(this->d[i-1],M).transpose();
-  return A;
+  return A.multiplyByTransposed(this->d[i-1],M).transpose();
 }
 
 simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& M) const {

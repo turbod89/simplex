@@ -1286,7 +1286,6 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
     
     // copy to global
     
-    r[cnt_rows] = cnt_nonNullValues;
     cnt_rows++;
     for (int j = 0; j < rank + 1 ; j++)
       if ( coeffs[j] != 0) {
@@ -1294,12 +1293,14 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
         v[cnt_nonNullValues] = coeffs[j];
         cnt_nonNullValues++;
       }
+
+    r[cnt_rows] = cnt_nonNullValues;
+
   }
   
   
   sparseMatrix V(cnt_rows,U.numCols,r,c,v),W;
-  W.multiplyByTransposed(V,Q).transpose();
-  return W;
+  return W.multiplyByTransposed(V,Q).transpose();
 }
 
 
