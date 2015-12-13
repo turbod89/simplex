@@ -1255,7 +1255,7 @@ sparseMatrix sparseMatrix::ker() const {
       nv++;
     } else {
       // no pot passar mai
-cerr << "Violation assertion: In sparseMatrix::ker()" << endl;
+cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
     }
     
     coeffs[rank] = values[0];
