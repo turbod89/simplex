@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
   
   sparseMatrix L,D,U,R,Q;
   
+  S.boundaryOperator(S.dim()).print(cout);
+  
   sparseMatrix H_n = S.boundaryOperator(S.dim()).ker().transpose();
   
   for (int i = 0; i < H_n.size(1); i++) {

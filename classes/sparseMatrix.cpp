@@ -1227,16 +1227,15 @@ sparseMatrix sparseMatrix::ker() const {
   this->LDU_efficient(L,D,U,P,Q);
   int rank = D.size(1);
   int dim = this->numCols - rank;
-  
   int * v = (int *) malloc(dim*(rank+1)*sizeof(int));
   int * c = (int *) malloc(dim*(rank+1)*sizeof(int));
-  int * r = (int *) malloc(dim*sizeof(int));
+  int * r = (int *) malloc((dim+1)*sizeof(int));
 
   int nonNullValuesInRow = U.numValuesInRow(rank-1) - 1;
   
   int cnt_nonNullValues = 0;
   int cnt_rows = 0;
-
+  r[0] = 0;
   for (int i = rank, nv = 0 ; i < this->numCols; i++) {
     int * coeffs = (int *) malloc((rank + 1)*sizeof(int));
     int * col_coeffs = (int *) malloc((rank + 1)*sizeof(int));
@@ -1280,8 +1279,8 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
       
       g = this->gcd(2,coeffs2);
       coeffs[j] = coeffs2[0]/g;
-      this->multiply(coeffs2[1]/g,rank-j,coeffs);
-      
+      this->multiply(coeffs2[1]/g,rank-j,&coeffs[j+1]);
+            
     }
     
     // copy to global
@@ -1295,10 +1294,7 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
       }
 
     r[cnt_rows] = cnt_nonNullValues;
-
   }
-  
-  
   sparseMatrix V(cnt_rows,U.numCols,r,c,v),W;
   return W.multiplyByTransposed(V,Q).transpose();
 }
