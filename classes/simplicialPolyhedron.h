@@ -65,6 +65,8 @@ class simplicialPolyhedron {
   simplicialPolyhedron& times(const simplicialPolyhedron& P, const simplicialPolyhedron& Q, int * signs = NULL, int *A = NULL , int level = -1, int n = -1, int m = -1, bool * path = NULL, int M = -1, int N = -1,int C = -1, int * cnt = NULL);
 
   simplicialPolyhedron operator*(const simplicialPolyhedron & P) const;
+  simplicialPolyhedron& cone();
+  simplicialPolyhedron& suspension();
 
   
 };

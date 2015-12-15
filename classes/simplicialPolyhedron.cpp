@@ -314,12 +314,14 @@ simplicialPolyhedron simplicialPolyhedron::boundary(int * coeffs2, int * coeffs)
   }
 
   if (coeffs == NULL) {
+    // sign of the original simplexes (by default 1)
     coeffs = (int *) malloc(this->m*sizeof(int));
     for (int i = 0; i < this->m ; i++)
       coeffs[i] = 1;
   }
   
   if (coeffs2 == NULL) {
+    // sign of the boundary resultant simplexes
     coeffs2 = (int *) malloc(this->n*this->m*sizeof(int));
     for (int i = 0; i < this->m*this->n ; i++)
       coeffs2[i] = 1;
@@ -576,7 +578,35 @@ simplicialPolyhedron simplicialPolyhedron::operator*(const simplicialPolyhedron 
   return Q;
 }
 
-/////////////////////////////////////////////////////////////////////////
-//
-//  Outside class
-//
+simplicialPolyhedron& simplicialPolyhedron::cone() {
+  
+  int * A = (int *) malloc((this->dim()+2)*this->length()*sizeof(int));
+  int * B = (int *) malloc(this->length()*sizeof(int));
+  int p = this->vectorMax((this->dim()+1)*this->length(),this->A)+1;
+  for (int i = 0; i < this->length(); i++)
+    B[i] = p;
+  
+  this->vcat(1,this->dim()+1,this->length(),A,B,this->A);
+  *this = simplicialPolyhedron(this->dim()+1,this->length(),A);
+  
+  return *this;
+}
+simplicialPolyhedron& simplicialPolyhedron::suspension() {
+
+  int * A = (int *) malloc((this->dim()+2)*2*this->length()*sizeof(int));
+  int * B = (int *) malloc(this->length()*sizeof(int));
+  
+  int p = this->vectorMax((this->dim()+1)*this->length(),this->A)+1;
+  for (int i = 0; i < this->length(); i++)
+    B[i] = p;
+  this->vcat(1,this->dim()+1,this->length(),A,B,this->A);
+
+  int q = p+1;
+  for (int i = 0; i < this->length(); i++)
+    B[i] = q;
+  this->vcat(this->dim()+1,1,this->length(),&A[(this->dim()+2)*this->length()],this->A,B);
+
+  *this = simplicialPolyhedron(this->dim()+1,2*this->length(),A);
+  
+  return *this;
+}
