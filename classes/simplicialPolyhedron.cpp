@@ -604,8 +604,15 @@ simplicialPolyhedron& simplicialPolyhedron::suspension() {
   int q = p+1;
   for (int i = 0; i < this->length(); i++)
     B[i] = q;
-  this->vcat(this->dim()+1,1,this->length(),&A[(this->dim()+2)*this->length()],this->A,B);
+  this->vcat(1,this->dim()+1,this->length(),&A[(this->dim()+2)*this->length()],B,this->A);
 
+  for (int i = 0; i < this->length(); i++) {
+    // swap 
+    int a = A[(this->dim()+2)*this->length() + i*(this->dim()+2)];
+    A[(this->dim()+2)*this->length() + i*(this->dim()+2)] = A[(this->dim()+2)*this->length() + i*(this->dim()+2) + 1];
+    A[(this->dim()+2)*this->length() + i*(this->dim()+2) + 1] = a;
+  }
+  
   *this = simplicialPolyhedron(this->dim()+1,2*this->length(),A);
   
   return *this;
