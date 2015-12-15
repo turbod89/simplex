@@ -578,16 +578,9 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
 
 simplicialPolyhedron simplicialPolyhedron::operator*(const simplicialPolyhedron & P) const {
   simplicialPolyhedron Q;
-  int * signs = (int *) malloc ((this->dim()+P.dim()+1)*this->length()*P.length()*sizeof(int));
+  int * signs = (int *) malloc (this->choose(this->dim(),this->dim()+P.dim())*this->length()*P.length()*sizeof(int));
   Q.times(*this,P,signs);
-  if (this->dim()+P.dim() > 0)
-    for (int i = 0; i < Q.length(); i++)
-      if ( signs[i] < 0) {
-        //swap
-        int a = Q.A[i*(Q.dim()+1)];
-        Q.A[i*(Q.dim()+1)] = Q.A[i*(Q.dim()+1)+1];
-        Q.A[i*(Q.dim()+1)+1] = a;
-      }
+  Q.orientSimplexes(signs);
   return Q;
 }
 
