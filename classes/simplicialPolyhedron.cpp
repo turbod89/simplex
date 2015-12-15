@@ -23,6 +23,16 @@ void simplicialPolyhedron::swap(int n, int * const a, int * const b) const {
 	}
 }
 
+int simplicialPolyhedron::vectorMax(int n, int const * const A) const {
+  if (n <= 0)
+    return -1;
+  int M = A[0];
+  for (int i = 1; i < n; i++)
+    if (M < A[i])
+      M = A[i];
+  return M;
+}
+
 int simplicialPolyhedron::mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions) const{
   
   if (m < 2)
@@ -110,7 +120,20 @@ void simplicialPolyhedron::vsplit(int n, int m, int * A, int k, int const * cons
   }
 }
 
+long long int simplicialPolyhedron::choose(int n, int m) const {
+  
+  int k = max(n,m);
+  n = min(n,m);  
+  m = k;
+  n = min(n,m-n);
+  long long int res = 1;
 
+  for (int i = 1; i <= n; i++)
+    res = res*(m-n+i)/i;
+  
+  return res;
+  
+}
 
 
 
@@ -147,12 +170,6 @@ simplicialPolyhedron& simplicialPolyhedron::operator=(const simplicialPolyhedron
   memcpy(this->A,P.values(),this->n*this->m*sizeof(int));
   return *this;
 }
-
-
-
-
-
-
 
 int simplicialPolyhedron::dim() const {
   return this->n - 1;
@@ -467,3 +484,99 @@ simplicialPolyhedron& simplicialPolyhedron::remove(int n, int * I) {
 simplicialPolyhedron& simplicialPolyhedron::remove(int i) {
   return this->remove(1,&i);
 }
+
+simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P, const simplicialPolyhedron& Q, int * signs, int * A, int level, int n, int m, bool * path, int M, int N,int C, int  * cnt) {
+
+  if (level < 0) {
+    // preparing for recursion
+    
+    int C = (int) this->choose(P.dim(),Q.dim()+P.dim());
+    A = (int *) malloc((P.dim()+Q.dim()+1)*P.length()*Q.length()*C*sizeof(int));
+    bool * path = (bool *) malloc((P.dim()+Q.dim()+1)*sizeof(bool));
+    M =  this->vectorMax((P.dim()+1)*P.length(),P.A)+1;
+    N =  this->vectorMax((Q.dim()+1)*Q.length(),Q.A)+1;
+    int cnt_value = 0;
+    cnt = &cnt_value;
+    this->times(P,Q,signs, A,0,P.dim(),Q.dim(),path,M, N,C,cnt);
+    *this = simplicialPolyhedron(P.dim()+Q.dim(),P.length()*Q.length()*C,A);
+    return *this;
+  }
+
+  if (n == 0 && m == 0) {
+    // we have a path, so we apply algorimth
+    
+    // calculate sign, if it procceds
+    if (signs != NULL) {
+      int sign_index = (*cnt)*(P.length()*Q.length());
+      int sign = 1;
+      int true_cnt = 0;
+      for (int l = 0 ; l <P.dim()+Q.dim() ; l++)
+        if (path[l]) {
+          if ( true_cnt%2 == 1)
+            sign *= -1;
+        } else
+          true_cnt++;
+      
+      for (int i = 0; i < sign_index; i++)
+        signs[sign_index + i] = sign;
+    }
+
+    // calcule simplexes
+    int A_index = (*cnt)*(P.length()*Q.length())*(P.dim()+Q.dim()+1);    
+    
+    for (int j = 0; j < Q.length(); j++)
+      for (int i = 0; i < P.length(); i++) {
+
+        int position = (i*Q.length() + j)*(P.dim()+Q.dim()+1);
+
+        A[A_index + position] = Q.A[j*(Q.dim()+1)]*M + P.A[i*(P.dim()+1)];
+
+        for (int r = 0, c = 0; r+c < P.dim()+Q.dim();) {
+          if ( path[r+c] ) {
+            r++;
+          } else {
+            c++;
+          }
+
+          A[A_index + position + r + c] = Q.A[j*(Q.dim()+1)+c]*M + P.A[i*(P.dim()+1)+r];
+        }
+		  }
+
+    (*cnt) += 1;
+
+  }
+  
+  if (n > 0) {
+    // building path, we continue
+    path[level] = true;
+    this->times(P,Q,signs,A,level+1,n-1,m,path,M,N,C,cnt);
+  }
+
+  if (m > 0) {
+    // building path, we continue
+    path[level] = false;
+    this->times(P,Q,signs,A,level+1,n,m-1,path,M,N,C,cnt);
+  }
+  
+  return *this;
+}
+
+simplicialPolyhedron simplicialPolyhedron::operator*(const simplicialPolyhedron & P) const {
+  simplicialPolyhedron Q;
+  int * signs = (int *) malloc ((this->dim()+P.dim()+1)*this->length()*P.length()*sizeof(int));
+  Q.times(*this,P,signs);
+  if (this->dim()+P.dim() > 0)
+    for (int i = 0; i < Q.length(); i++)
+      if ( signs[i] < 0) {
+        //swap
+        int a = Q.A[i*(Q.dim()+1)];
+        Q.A[i*(Q.dim()+1)] = Q.A[i*(Q.dim()+1)+1];
+        Q.A[i*(Q.dim()+1)+1] = a;
+      }
+  return Q;
+}
+
+/////////////////////////////////////////////////////////////////////////
+//
+//  Outside class
+//
