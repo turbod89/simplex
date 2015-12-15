@@ -217,6 +217,19 @@ const simplicialPolyhedron& simplicialPolyhedron::print(ostream & out) const {
 
 
 
+simplicialPolyhedron& simplicialPolyhedron::orientSimplexes(int * signs) {
+
+  for (int i = 0; i < this->length(); i++)
+    if (signs[i] < 0) {
+      // swap 
+      int a = this->A[i*(this->dim()+1) + this->dim() - 1];
+      this->A[i*(this->dim()+1) + this->dim() - 1] = A[i*(this->dim()+1) + this->dim()];
+      this->A[i*(this->dim()+1) + this->dim() ] = a;
+    }
+
+  return *this;
+}
+
 simplicialPolyhedron& simplicialPolyhedron::sortSimplexes(int * signs) {
   if (signs != NULL) 
     for (int i = 0; i < m ; i++)
@@ -586,7 +599,7 @@ simplicialPolyhedron& simplicialPolyhedron::cone() {
   for (int i = 0; i < this->length(); i++)
     B[i] = p;
   
-  this->vcat(1,this->dim()+1,this->length(),A,B,this->A);
+  this->vcat(this->dim()+1,1,this->length(),A,this->A,B);
   *this = simplicialPolyhedron(this->dim()+1,this->length(),A);
   
   return *this;
@@ -599,18 +612,18 @@ simplicialPolyhedron& simplicialPolyhedron::suspension() {
   int p = this->vectorMax((this->dim()+1)*this->length(),this->A)+1;
   for (int i = 0; i < this->length(); i++)
     B[i] = p;
-  this->vcat(1,this->dim()+1,this->length(),A,B,this->A);
+  this->vcat(this->dim()+1,1,this->length(),A,this->A,B);
 
   int q = p+1;
   for (int i = 0; i < this->length(); i++)
     B[i] = q;
-  this->vcat(1,this->dim()+1,this->length(),&A[(this->dim()+2)*this->length()],B,this->A);
+  this->vcat(this->dim()+1,1,this->length(),&A[(this->dim()+2)*this->length()],this->A,B);
 
   for (int i = 0; i < this->length(); i++) {
     // swap 
-    int a = A[(this->dim()+2)*this->length() + i*(this->dim()+2)];
-    A[(this->dim()+2)*this->length() + i*(this->dim()+2)] = A[(this->dim()+2)*this->length() + i*(this->dim()+2) + 1];
-    A[(this->dim()+2)*this->length() + i*(this->dim()+2) + 1] = a;
+    int a = A[(this->dim()+2)*this->length() + i*(this->dim()+2) + this->dim() + 1];
+    A[(this->dim()+2)*this->length() + i*(this->dim()+2) + this->dim() + 1] = A[(this->dim()+2)*this->length() + i*(this->dim()+2) + this->dim()];
+    A[(this->dim()+2)*this->length() + i*(this->dim()+2) + this->dim() ] = a;
   }
   
   *this = simplicialPolyhedron(this->dim()+1,2*this->length(),A);

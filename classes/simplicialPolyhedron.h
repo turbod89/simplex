@@ -53,6 +53,7 @@ class simplicialPolyhedron {
   simplicialPolyhedron& read(istream & in);
   const simplicialPolyhedron& print(ostream & out) const;
   
+  simplicialPolyhedron& orientSimplexes(int * signs);
   simplicialPolyhedron& sortSimplexes(int * signs = NULL);
   simplicialPolyhedron& simplifySimplexes(int * coeffs = NULL);
   simplicialPolyhedron boundary(int * coeffs2 = NULL, int * coeffs = NULL) const;

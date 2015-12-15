@@ -7,12 +7,14 @@ int main (int argc, char * argv[]) {
   simplicialPolyhedron A,B;
   A.read(cin);
   int * signs = (int *) malloc((A.dim()+1) * A.length()*sizeof(int));
-  B = A.boundary(signs).print(cout);
-  cout << endl;
-  
+  B = A.boundary(signs);
+  /*
   for (int i = 0; i < B.length(); i++)
     cout << " " << signs[i];
   cout << endl;
+  */
+  B.orientSimplexes(signs);
+  B.print(cout);
 
   return 0;
 }
