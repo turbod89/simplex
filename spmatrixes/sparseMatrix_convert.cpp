@@ -3,7 +3,7 @@
 #include <math.h>
 #include <fstream>
 #include <vector>
-#include "./classes/sparseMatrix.h"
+#include "sparseMatrix.h"
 using namespace std;
 
 

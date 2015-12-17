@@ -70,6 +70,8 @@ class simplicialChainComplex {
   
   simplicialPolyhedron support(int i, const sparseMatrix& M) const;
   
+  //sparseMatrix cup(int k, const sparseMatrix& M, int l, const sparseMatrix& N) const;
+  
 };
 
 #endif

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "classes/sparseMatrix.h"
+#include "sparseMatrix.h"
 using namespace std;
 
 int main (int argc, char * argv[]) {

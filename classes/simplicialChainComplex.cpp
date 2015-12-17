@@ -359,7 +359,7 @@ sparseMatrix simplicialChainComplex::boundary(int i,const sparseMatrix& M) const
     return sparseMatrix(0,0);
 
   sparseMatrix A;
-  return A.multiplyByTransposed(this->d[i-1],M).transpose();
+  return A.multiplyByTransposed(M,this->d[i-1]);
 }
 
 simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& M) const {
@@ -381,3 +381,14 @@ simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& 
   return simplicialPolyhedron(i,numValues,A);
   
 }
+
+/*sparseMatrix simplicialChainComplex::cup(int k, const sparseMatrix& M, int l, const sparseMatrix& N) const {
+  
+  if ( k < 0 || l < 0 || k+l > this->n -1 )
+    return M(0,0);
+  
+  sparseMatrix A = this->;
+
+}
+*/
+

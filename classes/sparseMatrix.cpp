@@ -904,6 +904,7 @@ sparseMatrix sparseMatrix::transpose() const {
   // swaping & to rcompresed format
   sparseMatrix M;
   M.read_index_format(this->numCols,this->numRows,this->length(),this->cols,rows,this->values);
+  free(rows);
   return M;
 }
 
@@ -1088,6 +1089,8 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   while (k < RANK_MAX && M.length() > 0) {
     // choose pivot
+cerr << k << " " << M.length() << endl;
+    sparseMatrix M_trans = M.transpose();
     
       // NOTA: si hi ha una fila o columna amb un sol element
       //       l'ideal seria escollir aquest
@@ -1100,7 +1103,6 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
       */
     
       // Forma nova
-    sparseMatrix M_trans = M.transpose();
     int r = 0, c = 0, min_c = 0, min_c_index = 0;
     while (c < M_trans.numRows && min_c != 1) {
       int nc = M_trans.numValuesInRow(c);
@@ -1206,7 +1208,6 @@ if (g == 0) {
     sparseMatrix mLU(M.numRows,M.numCols,lu_rows,lu_cols,lu_values);
 
     M = M*d + mLU;
-    
     
     // iteration
 

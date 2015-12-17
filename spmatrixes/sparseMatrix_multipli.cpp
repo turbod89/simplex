@@ -4,9 +4,10 @@ using namespace std;
 
 int main (int argc, char * argv[]) {
   
-  sparseMatrix M;
+  sparseMatrix M,N;
   M.read(cin);
-  sparseMatrix K = M.ker();
+  N.read(cin);
+  sparseMatrix K = M*N;
   K.print(cout);
   
   return 0;

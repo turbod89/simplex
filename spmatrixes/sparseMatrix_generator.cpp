@@ -15,10 +15,18 @@ void print_matrix(int * const M, int rows, int cols) {
 }
 
 void random_sparse_matrix_generator(int * &M, int rows, int cols, int k, int maximun, int minimun) {
+  
+  if ( maximun == minimun && minimun == 0) {
+    cerr << "Max/min arguments only allow matrix to be 0" << endl;
+    return;
+  }
+  
   int n = k*ceil(sqrt(cols*rows));
   M = (int *) calloc(cols*rows, sizeof(int));
   for (int i = 0; i < n; i++) {
-	int r = rand()%rows, c = rand()%cols, v = rand()%(maximun-minimun+1) + minimun;	
+	int r = rand()%rows, c = rand()%cols, v = rand()%(maximun-minimun+1) + minimun;
+	while (v == 0)
+	  v = rand()%(maximun-minimun+1) + minimun;
     M[cols*r + c] = v;
   }
 }
