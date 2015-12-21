@@ -7,6 +7,7 @@ int main(int argc, char *argv[]) {
   simplicialPolyhedron P;
   P.read(cin);
   simplicialChainComplex S(P);
+  S.print(cout);
   /*cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
   cout << "Fundamental Class: " << endl;
   S.fundamentalClass().print_full(cout);

@@ -20,4 +20,5 @@ g++ classes/*.cpp spmatrixes/sparseMatrix_multiply.cpp -I classes -o spmultiply
 
 echo "Compiling main";
 g++ classes/*.cpp main.cpp -I classes -o main
+#g++ classes/*.cpp manifolds_generator.cpp -I classes -o manifols_generator
 
