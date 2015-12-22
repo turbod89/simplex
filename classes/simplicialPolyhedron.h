@@ -28,13 +28,14 @@ class simplicialPolyhedron {
   int m;
 
   private:
-  
+
   bool leq(int n, int const * const a, int const * const b) const;
   bool eq(int n, int const * const a, int const * const b ) const;
   void swap(int n, int * const a, int * const b) const;
   int vectorMax(int n, int const * const A) const;
   int mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions = false) const;
   int bubbleSort(int n, int * const v) const;
+  bool search(int n1, int m, int * A, int n2, int const * const v, int & start, int & end) const;
   void vcat(int n1, int n2, int m, int * const C, int const * const A, int const * const B) const;
   void vsplit(int n, int m, int * A, int k, int const * const v, int * const B = NULL) const;
   long long int choose(int n, int m) const;
@@ -61,6 +62,7 @@ class simplicialPolyhedron {
   
   simplicialPolyhedron operator[](int k) const;
   const simplicialPolyhedron& binarySearch(const simplicialPolyhedron& P, int * const v, int * a = NULL, int * b = NULL) const;
+  void subSearch(const simplicialPolyhedron & P, int * start, int * end) const;
   simplicialPolyhedron& remove(int n, int * simplexes);
   simplicialPolyhedron& remove(int i);
   simplicialPolyhedron& times(const simplicialPolyhedron& P, const simplicialPolyhedron& Q, int * signs = NULL, int *A = NULL , int level = -1, int n = -1, int m = -1, bool * path = NULL, int M = -1, int N = -1,int C = -1, int * cnt = NULL);

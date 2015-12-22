@@ -92,6 +92,45 @@ int simplicialPolyhedron::bubbleSort(int n, int * const v) const {
   return sign;
 }
 
+bool simplicialPolyhedron::search(int n1, int m, int * A, int n2, int const * const v, int & start, int & end) const {
+  
+  if (n2 > n1)
+    return false;
+  
+  if ( end <= 0)
+    end = m;
+  
+  if ( end == start)
+    return false;
+    
+  int c = (start + end)/2;
+  
+  if (!this->leq(n2,&A[n1*c],v)) {
+    end = c;
+    return this->search(n1,m,A,n2,v,start,end);
+  } else if (!this->leq(n2,v,&A[n1*c])) {
+    start = c + 1;
+    return this->search(n1,m,A,n2,v,start,end);
+  } else {
+    // now we have A[n1*c] == v
+    if (!this->leq(n2,v,&A[n1*start]) ){
+      start++;
+      this->search(n1,m,A,n2,v,start,c); // find start of the block
+    }
+
+    if (!this->leq(n2,&A[n1*(end-1)],v) ) {
+      end--;
+      this->search(n1,m,A,n2,v,c,end); // find end of the block
+    }
+    
+    return true;
+
+  }
+
+  return false;
+
+}
+
 void simplicialPolyhedron::vcat(int n1, int n2, int m, int * const C, int const * const A, int const * const B) const {
   for (int j = m; j > 0; j--) {
     memcpy(&C[(n1+n2)*(j-1)],&A[n1*(j-1)], n1*sizeof(int));
@@ -469,6 +508,20 @@ const simplicialPolyhedron& simplicialPolyhedron::binarySearch(const simplicialP
   }
 
   return this->binarySearch(P,v,a,b);
+}
+
+void simplicialPolyhedron::subSearch(const simplicialPolyhedron & P, int * start, int * end) const {
+
+  int s = 0;
+
+  for (int i = 0; i < P.length(); i++) {
+    int e = this->m;
+    this->search(this->n,this->m,this->A,P.dim()+1,&P.values()[(P.dim()+1)*i],s,e);
+    start[i] = s;
+    end[i] = e;
+    s = e;
+  }
+
 }
 
 simplicialPolyhedron& simplicialPolyhedron::remove(int n, int * I) {

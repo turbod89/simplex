@@ -72,6 +72,8 @@ class simplicialChainComplex {
   
   //sparseMatrix cup(int k, const sparseMatrix& M, int l, const sparseMatrix& N) const;
   
+  sparseMatrix flat(int i, const sparseMatrix & M) const;
+  
 };
 
 #endif

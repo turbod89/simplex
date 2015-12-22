@@ -392,3 +392,72 @@ simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& 
 }
 */
 
+sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
+
+  int * A = (int *) malloc((k+1)*M.length()*sizeof(int));
+  
+  // copy k-simplexes to A
+  for ( int i = 0; i < M.length(); i++)
+    memcpy(&A[(k+1)*i],&this->P[k].values()[(k+1)*M.getCols()[i]],(k+1)*sizeof(int));
+
+  simplicialPolyhedron Q(k,M.length(),A);
+  free(A);
+  
+  // search them on maximal simplex
+  
+  int * start = (int *) malloc(Q.length()*sizeof(int));
+  int * end = (int *) malloc(Q.length()*sizeof(int));
+  
+  this->P[this->dim()].subSearch(Q,start,end);
+  
+  // get complementary
+
+  int l = 0;
+  for (int i = 0; i < Q.length(); i++)
+    l += end[i] - start[i];
+  A = (int *) malloc((this->dim()-k+1)*l*sizeof(int));
+  int * signs = (int *) malloc(l*sizeof(int));
+  
+  for (int i = 0, cnt = 0 ; i < Q.length(); i++)
+    for (int j = start[i]; j < end[i]; j++, cnt++) {
+      signs[cnt] = M.getValues()[i] * this->orientation[j];
+      memcpy(&A[(this->dim()-k+1)*cnt], &this->P[this->dim()].values()[(this->dim()+1)*j + k], (this->dim()-k+1)*sizeof(int));
+    }
+  
+  simplicialPolyhedron R(this->dim() - k, l, A);
+  free(A);
+  free(start);
+  free(end);
+  R.simplifySimplexes(signs);
+  
+  // search them on (dim - k) - simplexes
+  
+  start = (int *) malloc(R.length()*sizeof(int));
+  end = (int *) malloc(R.length()*sizeof(int));
+  
+  this->P[this->dim() - k].subSearch(R,start,end);
+  
+  // put'em on a matrix
+  
+  l = 0;
+  for (int i = 0; i < Q.length(); i++)
+    l += end[i] - start[i];
+  
+  int * rows = (int *) malloc(2*sizeof(int));
+  rows[0] = 0;
+  rows[1] = l;
+  int * cols = (int *) malloc(l*sizeof(int));
+  int * values = (int *) malloc(l*sizeof(int));
+  
+  for (int i = 0, cnt = 0 ; i < R.length(); i++)
+    for (int j = start[i]; j < end[i]; j++, cnt++) {
+      cols[cnt] = j;
+      values[cnt] = signs[i];
+    }
+    
+  sparseMatrix N(1,this->P[this->dim() - k].length(), rows, cols, values);
+  N.removeZeros();
+  
+  return N;
+
+}
