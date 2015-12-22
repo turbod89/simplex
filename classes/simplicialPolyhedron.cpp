@@ -583,6 +583,7 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
         if (path[l]) {
           if ( true_cnt%2 == 1)
             sign *= -1;
+            
         } else
           true_cnt++;
       

@@ -7,10 +7,11 @@ int main(int argc, char *argv[]) {
   simplicialPolyhedron P,Q;
   P.read(cin);
   simplicialChainComplex S(P);
-  S.print(cout);
+  //S.print(cout);
   
   
-  /*cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
+  cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
+  /*
   cout << "Fundamental Class: " << endl;
   S.fundamentalClass().print_full(cout);
   cout << "and its boundary has " << S.boundary(S.dim(),S.fundamentalClass()).length() << " simplexes." << endl;
