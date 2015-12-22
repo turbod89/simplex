@@ -258,13 +258,14 @@ const simplicialPolyhedron& simplicialPolyhedron::print(ostream & out) const {
 
 simplicialPolyhedron& simplicialPolyhedron::orientSimplexes(int * signs) {
 
-  for (int i = 0; i < this->length(); i++)
+  for (int i = 0; i < this->length(); i++) {
     if (signs[i] < 0) {
       // swap 
       int a = this->A[i*(this->dim()+1) + this->dim() - 1];
       this->A[i*(this->dim()+1) + this->dim() - 1] = A[i*(this->dim()+1) + this->dim()];
       this->A[i*(this->dim()+1) + this->dim() ] = a;
     }
+  }
 
   return *this;
 }
@@ -585,7 +586,7 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
         } else
           true_cnt++;
       
-      for (int i = 0; i < sign_index; i++)
+      for (int i = 0; i < P.length()*Q.length(); i++)
         signs[sign_index + i] = sign;
     }
 
