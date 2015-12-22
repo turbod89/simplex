@@ -70,6 +70,8 @@ class simplicialPolyhedron {
   simplicialPolyhedron operator*(const simplicialPolyhedron & P) const;
   simplicialPolyhedron& cone();
   simplicialPolyhedron& suspension();
+  
+  simplicialPolyhedron& operator<<(const simplicialPolyhedron& P);
 
   
 };

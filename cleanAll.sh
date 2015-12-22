@@ -5,6 +5,8 @@ rm simplex
 rm boundary
 rm suspension
 rm times
+rm sum
+rm s1
 
 rm spmatrix
 rm spconvert

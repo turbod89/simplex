@@ -9,6 +9,8 @@ g++ classes/*.cpp polyhedrons/boundary.cpp -I classes -o boundary
 g++ classes/*.cpp polyhedrons/cone.cpp -I classes -o cone
 g++ classes/*.cpp polyhedrons/suspension.cpp -I classes -o suspension
 g++ classes/*.cpp polyhedrons/simplex.cpp -I classes -o simplex
+g++ classes/*.cpp polyhedrons/connexSum.cpp -I classes -o sum
+g++ classes/*.cpp polyhedrons/sphere1.cpp -I classes -o s1
 
 echo "Compiling sparse Matrixes tools";
 g++ classes/*.cpp spmatrixes/sparseMatrix_generator.cpp -I classes -o spmatrix

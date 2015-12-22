@@ -7,17 +7,7 @@ int main(int argc, char *argv[]) {
   simplicialPolyhedron P,Q;
   P.read(cin);
   simplicialChainComplex S(P);
-  P.simplifySimplexes();
   S.print(cout);
-  
-  int k;
-  sparseMatrix M;
-  
-  cin >> k;
-  M.read(cin).print(cout);
-  
-  sparseMatrix N = S.flat(k,M);
-  N.print(cout);
   
   
   /*cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;

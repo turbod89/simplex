@@ -676,3 +676,35 @@ simplicialPolyhedron& simplicialPolyhedron::suspension() {
   
   return *this;
 }
+
+
+simplicialPolyhedron& simplicialPolyhedron::operator <<(const simplicialPolyhedron& P) {
+  
+  if (this->dim() != P.dim())
+    return *this;
+  
+  int M = this->vectorMax((this->dim()+1)*this->length(),this->A)+1;
+  // obtaning last simplex of this
+  simplicialPolyhedron B = this->operator[](this->length()-1);
+  int a = B.A[this->dim() - 1];
+  B.A[this->dim() - 1] = B.A[this->dim()];
+  B.A[this->dim()] = a;
+  // reallocating
+  this->A = (int *) realloc(this->A, (this->dim()+1)*(this->length() + P.length() -2)*sizeof(int));
+  
+  // setting values
+  for (int i = P.dim()+1; i < (P.dim()+1)*P.length(); i++) {
+    int j = 0;
+    while (j < P.dim()+1 && P.A[j] != P.A[i])
+      j++;
+    if ( j < P.dim()+1)
+      this->A[(this->dim() + 1)*(this->length() - 2) + i] = B.A[j];
+    else
+      this->A[(this->dim() + 1)*(this->length() - 2) + i] = P.A[i] + M;
+  }
+  
+  // upload variables
+  this->m += P.length()-2; 
+  
+  return *this;
+}
