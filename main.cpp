@@ -9,6 +9,7 @@ int main(int argc, char *argv[]) {
   simplicialChainComplex S(P);
   //S.print(cout);
   
+  cout << P.length() << endl;
   
   cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
   /*

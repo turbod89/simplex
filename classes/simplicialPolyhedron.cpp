@@ -227,11 +227,16 @@ simplicialPolyhedron& simplicialPolyhedron::read(istream & in) {
   in >> n >> m;
   n--;
   int * A = (int *) malloc((n+1)*m*sizeof(int));
+
   
   for (int i = 0; i < n+1; i++)
     for (int j = 0; j < m; j++)
       in >> A[ (n+1)*j + i];
-
+/*
+  for (int i = 0; i < m; i++)
+    for (int j = 0; j < n+1; j++)
+      in >> A[ (n+1)*i + j];
+*/
   this->n = n + 1;
   this->m = m;
   this->A = (int *) malloc((n+1)*m*sizeof(int));
@@ -244,12 +249,18 @@ simplicialPolyhedron& simplicialPolyhedron::read(istream & in) {
 const simplicialPolyhedron& simplicialPolyhedron::print(ostream & out) const {
   
   out << this->n << " " << this->m << endl;
-  
+
   for (int i = 0 ; i < this->n; i++) {
     for (int j = 0; j < this->m; j++)
       out << " " << this->A[j*this->n + i];
     out << endl;
   }
+/*
+  for (int i = 0 ; i < this->m; i++) {
+    for (int j = 0; j < this->n; j++)
+      out << " " << this->A[i*this->n + j];
+    out << endl;
+  } */
   
   return *this;
 }
@@ -566,7 +577,25 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
     N =  this->vectorMax((Q.dim()+1)*Q.length(),Q.A)+1;
     int cnt_value = 0;
     cnt = &cnt_value;
-    this->times(P,Q,signs, A,0,P.dim(),Q.dim(),path,M, N,C,cnt);
+    // signs
+    simplicialPolyhedron P2 = P, Q2 = Q;
+    int * P_signs = (int *) malloc(P.length()*sizeof(int));
+    int * Q_signs = (int *) malloc(Q.length()*sizeof(int));
+    for (int i = 0; i < P.length(); i++)
+      P_signs[i] = 1;
+    for (int i = 0; i < Q.length(); i++)
+      Q_signs[i] = 1;
+    P2.sortSimplexes(P_signs);
+    Q2.sortSimplexes(Q_signs);
+    // start recursion
+    this->times(P2,Q2,signs, A,0,P.dim(),Q.dim(),path,M, N,C,cnt);
+    // end recursion
+    // arrange signs
+    for (int i = 0; i < C; i++)
+      for (int j = 0; j < P.length(); j++)
+        for (int k = 0; k < Q.length(); k++)
+          signs[i*P.length()*Q.length() + j*Q.length() + k] *= P_signs[j]*Q_signs[k];
+    // finish
     *this = simplicialPolyhedron(P.dim()+Q.dim(),P.length()*Q.length()*C,A);
     return *this;
   }
@@ -594,8 +623,8 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
     // calcule simplexes
     int A_index = (*cnt)*(P.length()*Q.length())*(P.dim()+Q.dim()+1);    
     
-    for (int j = 0; j < Q.length(); j++)
-      for (int i = 0; i < P.length(); i++) {
+    for (int i = 0; i < P.length(); i++)
+      for (int j = 0; j < Q.length(); j++) {
 
         int position = (i*Q.length() + j)*(P.dim()+Q.dim()+1);
 
@@ -607,12 +636,11 @@ simplicialPolyhedron& simplicialPolyhedron::times(const simplicialPolyhedron& P,
           } else {
             c++;
           }
-
           A[A_index + position + r + c] = Q.A[j*(Q.dim()+1)+c]*M + P.A[i*(P.dim()+1)+r];
         }
-		  }
+      }
 
-    (*cnt) += 1;
+    (*cnt)++;
 
   }
   
