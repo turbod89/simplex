@@ -72,6 +72,8 @@ class sparseMatrix {
     inline int numValuesInRow(int row) const;
     sparseMatrix& swapRows(int row1, int row2);
     sparseMatrix& swapCols(int col1, int col2);
+    sparseMatrix& deleteRows(int n, int * const v);
+    sparseMatrix& deleteRow(int i);
     sparseMatrix& eye(int r, int c);
     sparseMatrix& eye(int n);
     sparseMatrix transpose() const;
@@ -89,6 +91,17 @@ inline int sparseMatrix::length() const {
   return this->rows[this->numRows];
 }
 
+inline int sparseMatrix::numValuesInRow(int row) const {
+
+  ////////////////
+  //
+  // return the number of non null elements in a row
+  //
+  ////////////////
+  
+  return this->rows[row+1] - this->rows[row];
+
+}
 
 #endif
     

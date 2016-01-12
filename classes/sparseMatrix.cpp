@@ -705,19 +705,6 @@ int sparseMatrix::sumRows(int n1, int const * const c1, int const * const v1, in
   return numValues;
 }
 
-
-inline int sparseMatrix::numValuesInRow(int row) const {
-
-  ////////////////
-  //
-  // return the number of non null elements in a row
-  //
-  ////////////////
-  
-  return this->rows[row+1] - this->rows[row];
-
-}
-
 sparseMatrix& sparseMatrix::swapRows(int swap1, int swap2) {
   
   if (swap1 > swap2)
@@ -869,6 +856,44 @@ this->print(cerr);
     }
       
   return *this;
+}
+
+sparseMatrix& sparseMatrix::deleteRows(int n, int * const v) {
+
+  if (n <= 0)
+    return *this;
+
+  this->mergeSort(n, v);
+
+  int numValues = this->rows[this->numRows];
+  int erasedValues = 0;
+  int erasedRows = 0;
+  for (int i = 0 ; i < this->numRows - erasedRows ;) {
+
+    if (erasedRows < n && i == v[erasedRows]-erasedRows) {
+      int numValuesInRow = this->rows[i+1+erasedRows] - this->rows[i+erasedRows];
+      erasedValues += numValuesInRow;
+      erasedRows++;
+    } else {
+      int numValuesInRow = this->rows[i+1+erasedRows] - this->rows[i+erasedRows];
+      this->rows[i] = this->rows[i+erasedRows] - erasedValues;
+      for (int j = this->rows[i]; erasedValues > 0 && j < this->rows[i] + numValuesInRow ; j++) {
+        this->cols[j] = this->cols[j+erasedValues];
+        this->values[j] = this->values[j+erasedValues];
+      }
+      i++;
+    }
+  }
+
+  this->numRows -= erasedRows;
+  this->rows = (int *) realloc(this->rows,(this->numRows + 1)*sizeof(int));
+  this->cols = (int *) realloc(this->cols,(numValues - erasedValues)*sizeof(int));
+  this->values = (int *) realloc(this->values,(numValues - erasedValues)*sizeof(int));
+  return *this;
+}
+
+sparseMatrix& sparseMatrix::deleteRow(int i) {
+  return this->deleteRows(1,&i);
 }
 
 sparseMatrix& sparseMatrix::eye(int r, int c) {
@@ -1089,7 +1114,6 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   while (k < RANK_MAX && M.length() > 0) {
     // choose pivot
-cerr << k << " " << M.length() << endl;
     sparseMatrix M_trans = M.transpose();
     
       // NOTA: si hi ha una fila o columna amb un sol element
