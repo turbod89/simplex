@@ -13,6 +13,8 @@ int main (int argc, char *argv[]) {
 	// prepare
 	int * deletedSimplexes = (int *) malloc(0*sizeof(int));
 	int numDeletedSimplexes = 0;
+	int * deletedSimplexesByCellJoining = (int *) malloc(0*sizeof(int));
+	int numDeletedSimplexesByCellJoining = 0;
 
 	// cell complex construction
 	for (int i = S.dim(); i > 0; i--) {
@@ -21,18 +23,21 @@ cerr << "Simplexes of dimension " << i << endl;
 		sparseMatrix d = S.boundaryOperator(i).transpose();
 		int numAliveCells = (d.size(1) - numDeletedSimplexes);
 		int * aliveCellsIndex = (int *) malloc(numAliveCells*sizeof(int));
-
+cerr << numDeletedSimplexes << " " << numAliveCells << " " << d.size(1) << endl;
 		for (int j = 0, ac = 0 , dc = 0; j < d.size(1) ; j++)
 			if ( dc < numDeletedSimplexes && j == deletedSimplexes[dc]) {
+cerr << " " << j;
 				dc++;
 			} else {
 				aliveCellsIndex[ac] = j;
 				ac++;
 			}
+cerr << endl;
+
+d.print_octave(cerr);
 
 		d.deleteRows(numDeletedSimplexes,deletedSimplexes);
 		d.LDU_efficient(L,D,U,rP,cP);
-		
 		// interprete
 		numDeletedSimplexes = 0;
 		deletedSimplexes = (int *) realloc(deletedSimplexes, L.size(2)*sizeof(int));
