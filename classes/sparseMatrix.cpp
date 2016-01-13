@@ -1081,6 +1081,9 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   // set variables
   sparseMatrix M(*this);  
+  M.cols = (int *) realloc(M.cols,(M.numRows * M.numCols)*sizeof(int));
+  M.values = (int *) realloc(M.values,(M.numRows * M.numCols)*sizeof(int));
+
   int RANK_MAX = min(M.numCols, M.numRows);
   
   L = sparseMatrix(RANK_MAX,M.numRows); // L is transposed for convenience
@@ -1111,10 +1114,10 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   int acum = 1;
   int k = 0;
-  
+
   while (k < RANK_MAX && M.length() > 0) {
     // choose pivot
-    sparseMatrix M_trans = M.transpose();
+    sparseMatrix * M_trans = new sparseMatrix(M.transpose());
     
       // NOTA: si hi ha una fila o columna amb un sol element
       //       l'ideal seria escollir aquest
@@ -1128,8 +1131,8 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     
       // Forma nova
     int r = 0, c = 0, min_c = 0, min_c_index = 0;
-    while (c < M_trans.numRows && min_c != 1) {
-      int nc = M_trans.numValuesInRow(c);
+    while (c < (*M_trans).numRows && min_c != 1) {
+      int nc = (*M_trans).numValuesInRow(c);
       if (min_c == 0 || (nc < min_c && nc > 0)) {
         min_c = nc;
         min_c_index = c;
@@ -1150,7 +1153,7 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
       
       if (min_r > 1) {
         c = min_c_index;
-        r = M_trans.cols[M_trans.rows[c]];
+        r = (*M_trans).cols[(*M_trans).rows[c]];
       } else {
         r = min_r_index;
         c = M.cols[M.rows[r]];
@@ -1158,12 +1161,12 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
       
     } else {
       c = min_c_index;
-      r = M_trans.cols[M_trans.rows[c]];
+      r = (*M_trans).cols[(*M_trans).rows[c]];
     }
     
     // put it on (k,k)
     M.swapCols(k,c).swapRows(k,r);
-    M_trans.swapCols(k,r).swapRows(k,c);
+    (*M_trans).swapCols(k,r).swapRows(k,c);
     L.swapCols(k,r);
     U.swapCols(k,c);
     rowPerm.swapCols(k,r);
@@ -1178,30 +1181,30 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     memcpy(&U.values[U.rows[k]], &M.values[M.rows[k]],M_numValuesInRow*sizeof(int));
 
     // diagonal
-    int M_numValuesInCol = M_trans.numValuesInRow(k);
-    int g = this->gcd(M_numValuesInCol,&M_trans.values[M_trans.rows[k]]);
+    int M_numValuesInCol = (*M_trans).numValuesInRow(k);
+    int g = this->gcd(M_numValuesInCol,&(*M_trans).values[(*M_trans).rows[k]]);
 if (g == 0) {
 
   cerr << "ERROR, g = 0" << endl;
   cerr << M_numValuesInCol << endl;
   for (int l=0; l < M_numValuesInCol ; l++)
-    cerr << " " << M_trans.values[M_trans.rows[k]+l];
+    cerr << " " << (*M_trans).values[(*M_trans).rows[k]+l];
   cerr << endl;
   cerr << M_numValuesInRow << endl;
   for (int l=0; l < M_numValuesInRow ; l++)
     cerr << " " << M.values[M.rows[k]+l];
   cerr << endl;
   cerr << k << " " << r << " " << c << endl;
-  M.print_full(cerr);
+  //M.print_full(cerr);
 }
     int d = M.values[M.rows[k]] / g;
 
     // L matrix
     L.numRows++;
     L.rows[k+1] = L.rows[k] + M_numValuesInCol;
-    memcpy(&L.cols[L.rows[k]],&M_trans.cols[M_trans.rows[k]],M_numValuesInCol*sizeof(int));
+    memcpy(&L.cols[L.rows[k]],&(*M_trans).cols[(*M_trans).rows[k]],M_numValuesInCol*sizeof(int));
     for (int i = 0; i < M_numValuesInCol; i++) {
-      L.values[L.rows[k] + i] = M_trans.values[M_trans.rows[k] + i]/g;
+      L.values[L.rows[k] + i] = (*M_trans).values[(*M_trans).rows[k] + i]/g;
     }
     
     // Diagonal
@@ -1229,9 +1232,17 @@ if (g == 0) {
     for (int r = L.cols[L.rows[k] + L.numValuesInRow(k) -1]+1; r < M.numRows; r++)
       lu_rows[r+1] = lu_rows[r];
     
-    sparseMatrix mLU(M.numRows,M.numCols,lu_rows,lu_cols,lu_values);
+    sparseMatrix * mLU = new sparseMatrix(M.numRows,M.numCols,lu_rows,lu_cols,lu_values);
 
-    M = M*d + mLU;
+    free(lu_rows);
+    free(lu_cols);
+    free(lu_values);
+
+
+    M = M*d + *mLU;
+
+    delete mLU;
+    delete M_trans;
     
     // iteration
 
