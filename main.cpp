@@ -13,6 +13,17 @@ int main(int argc, char *argv[]) {
   
   cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
 
+  for (int i = S.dim(); i >= 0 ; i--) {
+    sparseMatrix H = S.getHomology(i);
+    cout << "Homology classes of grade " << i << endl;
+    if (H.size(1) == 1 )
+      H.print(cout);
+    else if (H.size(1) > 1)
+      for (int j = 0; j < H.size(1); j++)
+        H[j].print(cout);
+  }
+
+ /*
   sparseMatrix dd0 = S.boundaryOperator(1).transpose();
   sparseMatrix dd1 = S.boundaryOperator(2).transpose();
 
@@ -22,37 +33,37 @@ int main(int argc, char *argv[]) {
   dd0.LDU_efficient(L0,D0,U0,P0,Q0);
   dd1.LDU_efficient(L1,D1,U1,P1,Q1);
 
-/* cohomology
-  sparseMatrix P0Q1KerU1 = P1*Q1*U1.ker();
-  sparseMatrix ImL0 = L0;
-  sparseMatrix P0X = ImL0.LXeqY(P0Q1KerU1);
-  sparseMatrix Kerdd1 = P0.transpose() * P0Q1KerU1;
+/* homology
 
-  dd1.ker().print_full(cout);
-  P0X.print_full(cout);
-
-  for (int i = 0 ; i < P0X.size(2); i++)
-    if (P0X.transpose().numValuesInRow(i) == 0)
-      Kerdd1.transpose()[i].print(cout);
-*/
-
-///* homology
-
-  sparseMatrix P0KerL0t = P0*(L0.transpose().ker());
   sparseMatrix Q1P0KerL0t = Q1*P0*(L0.transpose().ker());
 //Q1P0KerL0t.print(cerr);
   sparseMatrix ImU1t = U1.transpose();
 //ImU1t.print(cerr);
-  sparseMatrix X = ImU1t.LOrthogonal(Q1P0KerL0t);
+  sparseMatrix X = Q1.transpose()*ImU1t.LComplementary(Q1P0KerL0t);
 
   //P0KerL0t.print_octave(cout);
   //dd0.transpose().ker().print_octave(cout);
   for (int i = 0; i < X.size(2); i++)
-    if (X.transpose().numValuesInRow(i) != 0)
-      (Q1.transpose()*X).transpose()[i].print(cout);
+      X.transpose()[i].print(cout);
 
 
-//*/
+*/
+
+/* cohomology
+
+  sparseMatrix P0tQ1tKerU1 = P0.transpose()*Q1.transpose()*(U1.ker());
+//Q1P0KerL0t.print(cerr);
+  sparseMatrix ImL0 = L0;
+//ImU1t.print(cerr);
+  sparseMatrix X = P0*ImL0.LComplementary(P0tQ1tKerU1);
+
+  //P0KerL0t.print_octave(cout);
+  //dd0.transpose().ker().print_octave(cout);
+  for (int i = 0; i < X.size(2); i++)
+      X.transpose()[i].print(cout);
+
+
+*/
 
 
 /*

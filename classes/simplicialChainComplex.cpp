@@ -461,3 +461,41 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
   return N;
 
 }
+
+sparseMatrix simplicialChainComplex::getHomology(int i) const {
+
+  if (i == this->dim()) {
+
+    return this->d[i-1].ker().transpose();
+
+  } else if (i == 0) {
+
+    sparseMatrix L1, D1, U1, P1, Q1;
+
+    this->d[0].transpose().LDU_efficient(L1,D1,U1,P1,Q1);
+
+    sparseMatrix Q1P0KerL0t = Q1;
+    sparseMatrix ImU1t = U1.transpose();
+    sparseMatrix X = Q1.transpose()*ImU1t.LComplementary(Q1P0KerL0t);
+
+    return X.transpose();
+
+  } else if ( i < this->dim() && i > 0) {
+  
+    sparseMatrix L0, D0, U0, P0, Q0;
+    sparseMatrix L1, D1, U1, P1, Q1;
+
+    this->d[i-1].transpose().LDU_efficient(L0,D0,U0,P0,Q0);
+    this->d[i].transpose().LDU_efficient(L1,D1,U1,P1,Q1);
+
+    sparseMatrix Q1P0KerL0t = Q1*P0*(L0.transpose().ker());
+    sparseMatrix ImU1t = U1.transpose();
+    sparseMatrix X = Q1.transpose()*ImU1t.LComplementary(Q1P0KerL0t);
+
+    return X.transpose();
+
+  }
+
+  return sparseMatrix();
+
+}

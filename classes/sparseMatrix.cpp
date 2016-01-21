@@ -1421,7 +1421,7 @@ sparseMatrix sparseMatrix::LXeqY(const sparseMatrix &Y) const {
   return W.transpose();
 }
 
-sparseMatrix sparseMatrix::LOrthogonal(const sparseMatrix &Y) const {
+sparseMatrix sparseMatrix::LComplementary(const sparseMatrix &Y) const {
   // THIS IS MATRIX L
   // we will assum this matrix is lower triangular
   // with non null values on the diagonal
@@ -1430,7 +1430,12 @@ sparseMatrix sparseMatrix::LOrthogonal(const sparseMatrix &Y) const {
   sparseMatrix Y2(this->numCols,Y.size(2),Y.getRows(),Y.getCols(),Y.getValues());
   sparseMatrix X = L.LXeqY(Y2);
 
-  return (*this)*X +Y*(-1);
+  sparseMatrix A = (*this)*X +Y*(-1);
+
+  sparseMatrix l,d,u,p,q;
+  A.LDU_efficient(l,d,u,p,q);
+
+  return p*l;
 
 }
 
