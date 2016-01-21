@@ -5,16 +5,19 @@ using namespace std;
 
 int main (int argc, char * argv[]) {
 
-  if (argc < 2) {
-    cerr << "S1 n" << endl;
+  if (argc < 1) {
+    cerr << "S1 [n]" << endl;
     cerr << endl;
     cerr << "\t" << "Description: returns a S^1 trianguled with n simplexes."<< endl;
-    cerr << "\t" << "             Of curse, n >= 3."<< endl;
+    cerr << "\t" << "             Of curse, n >= 3. By default, n = 3."<< endl;
     cerr << endl;
     return 1;
   }
   
-  int n = max(3,atoi(argv[1]));
+  int n = 3;
+
+  if (argc > 1)
+    n = max(3,atoi(argv[1]));
   
   for (int i = 2;i < argc; i++ ) {
 	  cerr << "Unknow argument \""<< string(argv[i]) <<"\"." << endl;

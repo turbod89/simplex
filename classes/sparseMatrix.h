@@ -1,4 +1,5 @@
 /*
+/*
  *  Class: sparseMatrix
  *  Author: Daniel Torres
  *  Filename: sparseMatrix.h
@@ -85,6 +86,8 @@ class sparseMatrix {
     int operator()(int row, int col) const;
     const sparseMatrix& LDU_efficient(sparseMatrix& L, sparseMatrix& D, sparseMatrix& U, sparseMatrix& rowPerm, sparseMatrix& colPerm) const;
     sparseMatrix ker() const;
+    sparseMatrix LXeqY(const sparseMatrix &Y) const;
+    sparseMatrix LOrthogonal(const sparseMatrix &Y) const;
 };
 
 inline int sparseMatrix::length() const {

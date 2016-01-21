@@ -1114,6 +1114,7 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   int acum = 1;
   int k = 0;
+  bool lastPivotRetractForm = true;
 
   while (k < RANK_MAX && M.length() > 0) {
     // choose pivot
@@ -1131,16 +1132,16 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     
       // Forma nova
     int r = 0, c = 0, min_c = 0, min_c_index = 0;
-    while (c < (*M_trans).numRows && min_c != 1) {
+    while (c < (*M_trans).numRows && ((min_c != 1 && lastPivotRetractForm) || min_c != 2 && !lastPivotRetractForm) ) {
       int nc = (*M_trans).numValuesInRow(c);
-      if (min_c == 0 || (nc < min_c && nc > 0)) {
+      if (min_c == 0 || (nc < min_c && nc > 0 && lastPivotRetractForm) || (!lastPivotRetractForm && nc < min_c && nc > 1) ) {
         min_c = nc;
         min_c_index = c;
       }
       c++;
     }
     
-    if ( min_c > 1) {
+    if ( min_c > 2 ) {
       int min_r = 0, min_r_index = 0;
       while (r < M.numRows && min_r != 1) {
         int nr = M.numValuesInRow(r);
@@ -1162,6 +1163,7 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
     } else {
       c = min_c_index;
       r = (*M_trans).cols[(*M_trans).rows[c]];
+      lastPivotRetractForm = lastPivotRetractForm && (min_c == 1);
     }
     
     // put it on (k,k)
@@ -1198,6 +1200,11 @@ if (g == 0) {
   //M.print_full(cerr);
 }
     int d = M.values[M.rows[k]] / g;
+
+    if (d < 0) {
+      d *= -1;
+      g *= -1;
+    }
 
     // L matrix
     L.numRows++;
@@ -1333,6 +1340,98 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
   }
   sparseMatrix V(cnt_rows,U.numCols,r,c,v),W;
   return W.multiplyByTransposed(V,Q).transpose();
+}
+
+sparseMatrix sparseMatrix::LXeqY(const sparseMatrix &Y) const {
+  // THIS IS MATRIX L
+  // we will assum this matrix is lower triangular
+  // with non null values on the diagonal
+
+  int numRows = Y.numCols;
+  int numCols = this->numCols;
+  int * r = (int *) malloc((numRows+1)*sizeof(int));
+  int * c = (int *) malloc((numRows*numCols)*sizeof(int));
+  int * v = (int *) malloc((numRows*numCols)*sizeof(int));
+
+  r[0] = 0;
+  for (int row = 0; row < numRows; row++) {
+    int * local_c = &c[r[row]];
+    int * local_v = &v[r[row]];
+
+    bool isThisRowPossible = true;
+    int nvr = 0; // number of non null values on this row
+    for (int col = 0; isThisRowPossible && col < numCols; col++) {
+      //
+      // equation B + x_k l_kk = Y_col,row
+      //
+      // get independent term B
+      int B = 0;
+      for (int i = 0, j = 0; i < nvr && j < this->numValuesInRow(col);)
+        if ( local_c[i] == this->cols[this->rows[col] + j]) {
+          B += local_v[i]*this->values[this->rows[col] + j];
+          i++;
+          j++;
+        } else if (local_c[i] < this->cols[this->rows[col] + j]) {
+          i++;
+        } else if (local_c[i] > this->cols[this->rows[col] + j]) {
+          j++;
+        } else {
+          // no pot ocorrer
+        }
+
+      // GET A
+      int A = Y(col,row) - B;
+      // GET l_kk
+      int l_kk = this->values[this->rows[col] + this->numValuesInRow(col)-1];
+      // is this row possible?
+      isThisRowPossible = l_kk == 1 || l_kk == -1 || A%l_kk == 0;
+      // X_row,col
+      int X = A/l_kk;
+      // allocate if corresponds
+      if (X != 0) {
+        local_c[nvr] = col;
+        local_v[nvr] = X;
+//cerr << "(" << row << ", " << col << ", " << X << ")" << endl;
+        nvr++;
+      }
+
+    }
+
+    // now check excedent conditions
+
+    for (int i = this->numCols ; isThisRowPossible && i < Y.numRows; i++) {
+      int a = this->multiplyRows(nvr, local_c, local_v, this->numValuesInRow(i), &this->cols[this->rows[row]],&this->values[this->rows[row]] );
+      isThisRowPossible = (a == Y(i,row));
+    }
+
+    // check if this row is a solution
+    if (isThisRowPossible) {
+      r[row+1] = r[row] + nvr;
+    } else {
+      r[row+1] = r[row];
+    }
+
+  }
+
+  c = (int *) realloc(c,r[numRows]*sizeof(int));
+  v = (int *) realloc(v,r[numRows]*sizeof(int));
+
+  sparseMatrix W(numRows, numCols, r,c,v);
+//W.print_octave(cerr);
+  return W.transpose();
+}
+
+sparseMatrix sparseMatrix::LOrthogonal(const sparseMatrix &Y) const {
+  // THIS IS MATRIX L
+  // we will assum this matrix is lower triangular
+  // with non null values on the diagonal
+
+  sparseMatrix L(this->numCols,this->numCols,this->rows,this->cols,this->values);
+  sparseMatrix Y2(this->numCols,Y.size(2),Y.getRows(),Y.getCols(),Y.getValues());
+  sparseMatrix X = L.LXeqY(Y2);
+
+  return (*this)*X +Y*(-1);
+
 }
 
 
