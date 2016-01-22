@@ -1061,6 +1061,151 @@ int sparseMatrix::operator()(int row, int col) const {
   return 0;    
 }
 
+void sparseMatrix::LDU_pivotChoosing(const sparseMatrix * M, const sparseMatrix * Mt, int & r, int & c) const {
+
+  r = 0;  
+  c = 0;
+
+  int min_c = 0, min_c_index = 0;
+  
+  // Check column with minimun number of values
+  while (c < Mt->numRows && min_c != 1 ) {
+    int nc = Mt->numValuesInRow(c);
+      if (min_c == 0 || (nc < min_c && nc > 0) ) {
+        min_c = nc;
+        min_c_index = c;
+      }
+      c++;
+    }
+  
+  // If this number is > 2 we check for rows
+  if ( min_c > 2 ) {
+    
+    // check
+    int min_r = 0, min_r_index = 0;
+    while (r < M->numRows && min_r != 1) {
+      int nr = M->numValuesInRow(r);
+      if (min_r == 0 || (nr < min_r && nr >0)) {
+        min_r = nr;
+        min_r_index = r;
+      }
+      r++;
+    }
+    
+    // is this way better?
+    if (min_r > 1) {
+        c = min_c_index;
+        r = Mt->cols[Mt->rows[c]];
+      } else {
+        r = min_r_index;
+        c = M->cols[M->rows[r]];
+      }
+      
+    } else {
+      c = min_c_index;
+      r = Mt->cols[Mt->rows[c]];
+    }
+
+    return;
+}
+
+void sparseMatrix::LDU_permutations(sparseMatrix * M, sparseMatrix * Mt, sparseMatrix * L, sparseMatrix * U, sparseMatrix * rowPerm, sparseMatrix * colPerm, int k, int r, int c) const {
+
+  M->swapCols(k,c).swapRows(k,r);
+  Mt->swapCols(k,r).swapRows(k,c);
+  L->swapCols(k,r);
+  U->swapCols(k,c);
+  rowPerm->swapCols(k,r);
+  colPerm->swapRows(k,c);
+
+  return;
+
+}
+
+void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, const sparseMatrix * L, const sparseMatrix * U, int k, int d) const {
+
+    int * lu_rows = (int *) malloc((M->numRows + 1) *sizeof(int));
+    int * lu_cols = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
+    int * lu_values = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
+    
+    lu_rows[0] = 0;
+    for (int i = 0, v = 0, r = -1; i < L->numValuesInRow(k); i++) {
+      while ( r < L->cols[L->rows[k]+i]) {
+        r++;
+        lu_rows[r+1] = lu_rows[r];
+      }
+      for (int j = 0; j < U->numValuesInRow(k); j++, v++) {
+        lu_values[v] = -L->values[L->rows[k]+i]*U->values[U->rows[k]+j];
+        lu_cols[v] = U->cols[U->rows[k] + j];
+        lu_rows[r+1]++;
+      }
+    }
+    for (int r = L->cols[L->rows[k] + L->numValuesInRow(k) -1]+1; r < M->numRows; r++)
+      lu_rows[r+1] = lu_rows[r];
+    
+    sparseMatrix * mLU = new sparseMatrix(M->numRows,M->numCols,lu_rows,lu_cols,lu_values);
+
+    free(lu_rows);
+    free(lu_cols);
+    free(lu_values);
+
+
+    //*M = (*M)*d + *mLU;
+/*
+    for (int i = 0; i < M->rows[M->numRows] ; i++)
+      M->values[i] *= d;
+
+    *M = M->operator+(*mLU);
+*/
+
+
+    int * M_rows = (int *) malloc((M->numRows - k + 1)*sizeof(int));
+    int * M_cols = (int *) malloc((M->rows[M->numRows] - M->rows[k])*sizeof(int));
+    int * M_values = (int *) malloc((M->rows[M->numRows] - M->rows[k])*sizeof(int));
+
+    memcpy(M_rows,&(M->rows[k]),(M->numRows - k + 1)*sizeof(int));
+    memcpy(M_cols,&(M->cols[M->rows[k]]),(M->rows[M->numRows] - M->rows[k])*sizeof(int));
+    memcpy(M_values,&(M->values[M->rows[k]]),(M->rows[M->numRows] - M->rows[k])*sizeof(int));
+
+    for (int i = 0; i < (M->rows[M->numRows] - M->rows[k]) ; i++)
+      M_values[i] *= d;
+
+    for (int i = k; i < M->numRows; i++) {
+      int a = this->sumRows(M_rows[i+1 - k] - M_rows[i-k], &M_cols[M_rows[i-k] - M_rows[0]], &M_values[M_rows[i-k] - M_rows[0]],
+                      mLU->numValuesInRow(i), &mLU->cols[mLU->rows[i]], &mLU->values[mLU->rows[i]],
+                      &M->cols[M->rows[i]], &M->values[M->rows[i]]);
+      M->rows[i+1] = M->rows[i] + a;
+    }
+
+    // transpose
+
+    *mLU = mLU->transpose();
+
+    int * Mt_rows = (int *) malloc((Mt->numRows - k + 1)*sizeof(int));
+    int * Mt_cols = (int *) malloc((Mt->rows[Mt->numRows] - Mt->rows[k])*sizeof(int));
+    int * Mt_values = (int *) malloc((Mt->rows[Mt->numRows] - Mt->rows[k])*sizeof(int));
+
+    memcpy(Mt_rows,&(Mt->rows[k]),(Mt->numRows - k + 1)*sizeof(int));
+    memcpy(Mt_cols,&(Mt->cols[Mt->rows[k]]),(Mt->rows[Mt->numRows] - Mt->rows[k])*sizeof(int));
+    memcpy(Mt_values,&(Mt->values[Mt->rows[k]]),(Mt->rows[Mt->numRows] - Mt->rows[k])*sizeof(int));
+
+    for (int i = 0; i < (Mt->rows[Mt->numRows] - Mt->rows[k]) ; i++)
+      Mt_values[i] *= d;
+
+    for (int i = k; i < Mt->numRows; i++) {
+      int a = this->sumRows(Mt_rows[i+1 - k] - Mt_rows[i-k], &Mt_cols[Mt_rows[i-k] - Mt_rows[0]], &Mt_values[Mt_rows[i-k] - Mt_rows[0]],
+                      mLU->numValuesInRow(i), &mLU->cols[mLU->rows[i]], &mLU->values[mLU->rows[i]],
+                      &Mt->cols[Mt->rows[i]], &Mt->values[Mt->rows[i]]);
+      Mt->rows[i+1] = Mt->rows[i] + a;
+    }
+
+
+    delete mLU;
+
+    return;
+
+}
+
 const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D, sparseMatrix& U, sparseMatrix& rowPerm, sparseMatrix& colPerm) const {
   
   ///////////////////////////////
@@ -1080,22 +1225,27 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   ////////////////////////////////////
   
   // set variables
-  sparseMatrix M(*this);  
-  M.cols = (int *) realloc(M.cols,(M.numRows * M.numCols)*sizeof(int));
-  M.values = (int *) realloc(M.values,(M.numRows * M.numCols)*sizeof(int));
 
-  int RANK_MAX = min(M.numCols, M.numRows);
+  sparseMatrix * M = new sparseMatrix(*this);
+  sparseMatrix * M_trans = new sparseMatrix(M->transpose());
+
+  M->cols = (int *) realloc(M->cols,(M->numRows * M->numCols)*sizeof(int));
+  M->values = (int *) realloc(M->values,(M->numRows * M->numCols)*sizeof(int));
+  M_trans->cols = (int *) realloc(M_trans->cols,(M_trans->numRows * M_trans->numCols)*sizeof(int));
+  M_trans->values = (int *) realloc(M_trans->values,(M_trans->numRows * M_trans->numCols)*sizeof(int));
+
+  int RANK_MAX = min(M->numCols, M->numRows);
   
-  L = sparseMatrix(RANK_MAX,M.numRows); // L is transposed for convenience
+  L = sparseMatrix(RANK_MAX,M->numRows); // L is transposed for convenience
   L.numRows = 0;
   L.rows[0] = 0;
-  L.cols = (int *) malloc((RANK_MAX*M.numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
-  L.values = (int *) malloc((RANK_MAX*M.numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
-  U = sparseMatrix(RANK_MAX,M.numCols);
+  L.cols = (int *) realloc(L.cols,(RANK_MAX*M->numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  L.values = (int *) realloc(L.values,(RANK_MAX*M->numRows - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  U = sparseMatrix(RANK_MAX,M->numCols);
   U.numRows = 0;
   U.rows[0] = 0;
-  U.cols = (int *) malloc((RANK_MAX*M.numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
-  U.values = (int *) malloc((RANK_MAX*M.numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  U.cols = (int *) realloc(U.cols,(RANK_MAX*M->numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
+  U.values = (int *) realloc(U.values,(RANK_MAX*M->numCols - RANK_MAX*(RANK_MAX-1)/2)*sizeof(int));
   
   int * seq = (int *) malloc((max(this->numCols,this->numRows) + 1)*sizeof(int));
   int * ones = (int *) malloc((max(this->numCols,this->numRows) + 1)*sizeof(int));
@@ -1114,92 +1264,27 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   
   int acum = 1;
   int k = 0;
-  bool lastPivotRetractForm = true;
 
-  while (k < RANK_MAX && M.length() > 0) {
-    // choose pivot
-    sparseMatrix * M_trans = new sparseMatrix(M.transpose());
-    
-      // NOTA: si hi ha una fila o columna amb un sol element
-      //       l'ideal seria escollir aquest
-    
-      /* // Forma antiga
-      int r = 0, c = 0;
-      while (r < M.numRows && M.numValuesInRow(r) == 0)
-        r++; 
-      c = M.cols[M.rows[r]];
-      */
-    
-      // Forma nova
-    int r = 0, c = 0, min_c = 0, min_c_index = 0;
-    while (c < (*M_trans).numRows && ((min_c != 1 && lastPivotRetractForm) || min_c != 2 && !lastPivotRetractForm) ) {
-      int nc = (*M_trans).numValuesInRow(c);
-      if (min_c == 0 || (nc < min_c && nc > 0 && lastPivotRetractForm) || (!lastPivotRetractForm && nc < min_c && nc > 1) ) {
-        min_c = nc;
-        min_c_index = c;
-      }
-      c++;
-    }
-    
-    if ( min_c > 2 ) {
-      int min_r = 0, min_r_index = 0;
-      while (r < M.numRows && min_r != 1) {
-        int nr = M.numValuesInRow(r);
-        if (min_r == 0 || (nr < min_r && nr >0)) {
-          min_r = nr;
-          min_r_index = r;
-        }
-        r++;
-      }
-      
-      if (min_r > 1) {
-        c = min_c_index;
-        r = (*M_trans).cols[(*M_trans).rows[c]];
-      } else {
-        r = min_r_index;
-        c = M.cols[M.rows[r]];
-      }
-      
-    } else {
-      c = min_c_index;
-      r = (*M_trans).cols[(*M_trans).rows[c]];
-      lastPivotRetractForm = lastPivotRetractForm && (min_c == 1);
-    }
+  while (k < RANK_MAX && M->length() > 0) {
+        
+    // pivot choosing
+    int r = 0, c = 0;
+    this->LDU_pivotChoosing(M,M_trans,r,c);
     
     // put it on (k,k)
-    M.swapCols(k,c).swapRows(k,r);
-    (*M_trans).swapCols(k,r).swapRows(k,c);
-    L.swapCols(k,r);
-    U.swapCols(k,c);
-    rowPerm.swapCols(k,r);
-    colPerm.swapRows(k,c);
+    this->LDU_permutations(M,M_trans,&L,&U,&rowPerm,&colPerm,k,r,c);
 
-    //algorimth itself
     // U matrix
-    int M_numValuesInRow = M.numValuesInRow(k);
+    int M_numValuesInRow = M->numValuesInRow(k);
     U.numRows++;
     U.rows[k+1] = U.rows[k] + M_numValuesInRow;
-    memcpy(&U.cols[U.rows[k]], &M.cols[M.rows[k]],M_numValuesInRow*sizeof(int));
-    memcpy(&U.values[U.rows[k]], &M.values[M.rows[k]],M_numValuesInRow*sizeof(int));
+    memcpy(&U.cols[U.rows[k]], &M->cols[M->rows[k]],M_numValuesInRow*sizeof(int));
+    memcpy(&U.values[U.rows[k]], &M->values[M->rows[k]],M_numValuesInRow*sizeof(int));
 
     // diagonal
     int M_numValuesInCol = (*M_trans).numValuesInRow(k);
     int g = this->gcd(M_numValuesInCol,&(*M_trans).values[(*M_trans).rows[k]]);
-if (g == 0) {
-
-  cerr << "ERROR, g = 0" << endl;
-  cerr << M_numValuesInCol << endl;
-  for (int l=0; l < M_numValuesInCol ; l++)
-    cerr << " " << (*M_trans).values[(*M_trans).rows[k]+l];
-  cerr << endl;
-  cerr << M_numValuesInRow << endl;
-  for (int l=0; l < M_numValuesInRow ; l++)
-    cerr << " " << M.values[M.rows[k]+l];
-  cerr << endl;
-  cerr << k << " " << r << " " << c << endl;
-  //M.print_full(cerr);
-}
-    int d = M.values[M.rows[k]] / g;
+    int d = M->values[M->rows[k]] / g;
 
     if (d < 0) {
       d *= -1;
@@ -1219,37 +1304,8 @@ if (g == 0) {
     acum *= d;
     diagonal[k] = acum;
 
-    // simule (efficiently) ((L[k].transpose()*(-1))*(U[k]));
-    int * lu_rows = (int *) malloc((M.numRows + 1) *sizeof(int));
-    int * lu_cols = (int *) malloc(L.numValuesInRow(k)*U.numValuesInRow(k)*sizeof(int));
-    int * lu_values = (int *) malloc(L.numValuesInRow(k)*U.numValuesInRow(k)*sizeof(int));
-    
-    lu_rows[0] = 0;
-    for (int i = 0, v = 0, r = -1; i < L.numValuesInRow(k); i++) {
-      while ( r < L.cols[L.rows[k]+i]) {
-        r++;
-        lu_rows[r+1] = lu_rows[r];
-      }
-      for (int j = 0; j < U.numValuesInRow(k); j++, v++) {
-        lu_values[v] = -L.values[L.rows[k]+i]*U.values[U.rows[k]+j];
-        lu_cols[v] = U.cols[U.rows[k] + j];
-        lu_rows[r+1]++;
-      }
-    }
-    for (int r = L.cols[L.rows[k] + L.numValuesInRow(k) -1]+1; r < M.numRows; r++)
-      lu_rows[r+1] = lu_rows[r];
-    
-    sparseMatrix * mLU = new sparseMatrix(M.numRows,M.numCols,lu_rows,lu_cols,lu_values);
-
-    free(lu_rows);
-    free(lu_cols);
-    free(lu_values);
-
-
-    M = M*d + *mLU;
-
-    delete mLU;
-    delete M_trans;
+    // M := dM - LU, Mt := M^t
+    this->LDU_calculation_dM_LU(M,M_trans,&L,&U,k,d);
     
     // iteration
 

@@ -43,6 +43,9 @@ class sparseMatrix {
     int multiplyRows(int n1, int const * const c1, int const * const v1, int n2, int const * const c2, int const * const v2) const;
     int sumRows(int n1, int const * const c1, int const * const v1, int n2, int const * const c2, int const * const v2, int * const c3, int * const v3) const;
 
+    void LDU_pivotChoosing(const sparseMatrix * M, const sparseMatrix * Mt, int & r, int & c) const;
+    void LDU_permutations(sparseMatrix * M, sparseMatrix * Mt, sparseMatrix * L, sparseMatrix * U, sparseMatrix * rowPerm, sparseMatrix * colPerm, int k, int r, int c) const;
+    void LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, const sparseMatrix * L, const sparseMatrix * U, int k, int d) const;
     
   public:
   
