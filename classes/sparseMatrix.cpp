@@ -1,6 +1,6 @@
 #include "sparseMatrix.h"
 
-sparseMatrix::sparseMatrix(){
+sparseMatrix::sparseMatrix() {
   this->values = NULL;
   this->cols = NULL;
   this->rows = NULL;
@@ -9,6 +9,7 @@ sparseMatrix::sparseMatrix(){
 sparseMatrix::sparseMatrix(int r, int c, const int * const rows, const int * const cols, const int * const values) {
   this->numRows = r;
   this->numCols = c;
+
   this->rows = (int *) malloc((r+1)*sizeof(int));
   memcpy(this->rows,rows,(r+1)*sizeof(int));
 
@@ -27,7 +28,6 @@ sparseMatrix::sparseMatrix(int r , int c) {
   
   for (int i = 0 ; i < this->numRows + 1; i++)
     this->rows[i] = 0;
-
 }
 
 sparseMatrix::sparseMatrix(int * M, int r , int c) {
@@ -58,6 +58,9 @@ sparseMatrix::sparseMatrix(int * M, int r , int c) {
 }
 
 sparseMatrix::sparseMatrix(const sparseMatrix& M){
+  this->values = NULL;
+  this->cols = NULL;
+  this->rows = NULL;
   *this = M;
 }
 
@@ -72,11 +75,21 @@ sparseMatrix& sparseMatrix::operator=(const sparseMatrix& M) {
   this->numCols = M.numCols;
   this->numRows = M.numRows;
 
-  this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
+  if (this->rows)
+    this->rows = (int *) realloc(this->rows,(this->numRows+1)*sizeof(int));
+  else
+    this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
   memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
   
-  this->values = (int *) malloc(M.length()*sizeof(int));
-  this->cols = (int *) malloc(M.length()*sizeof(int));
+  if (this->values)
+    this->values = (int *) realloc(this->values,M.length()*sizeof(int));
+  else  
+    this->values = (int *) malloc(M.length()*sizeof(int));
+
+  if (this->cols)
+    this->cols = (int *) realloc(this->cols,M.length()*sizeof(int));
+  else
+    this->cols = (int *) malloc(M.length()*sizeof(int));
   memcpy(this->values,M.values,M.length()*sizeof(int));
   memcpy(this->cols,M.cols,M.length()*sizeof(int));
   
@@ -1178,7 +1191,6 @@ void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, co
     }
 
     // transpose
-
     *mLU = mLU->transpose();
 
     int * Mt_rows = (int *) malloc((Mt->numRows - k + 1)*sizeof(int));
@@ -1198,7 +1210,6 @@ void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, co
                       &Mt->cols[Mt->rows[i]], &Mt->values[Mt->rows[i]]);
       Mt->rows[i+1] = Mt->rows[i] + a;
     }
-
 
     delete mLU;
 
@@ -1225,7 +1236,6 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
   ////////////////////////////////////
   
   // set variables
-
   sparseMatrix * M = new sparseMatrix(*this);
   sparseMatrix * M_trans = new sparseMatrix(M->transpose());
 
