@@ -69,6 +69,11 @@ int simplicialPolyhedron::mergeSortBlocks(int n, int m, int * A, bool deleteRepe
   
   if (repetitions > 0)
     A = (int *) realloc(A,n*(m-repetitions)*sizeof(int));
+
+  //return
+  free(a);
+  free(b);
+
   
   return m - repetitions;
 }
@@ -297,7 +302,7 @@ simplicialPolyhedron& simplicialPolyhedron::simplifySimplexes(int * coeffs) {
 
   if ( this->n <= 0)
     return *this;
-    
+
   if (coeffs == NULL) {
     coeffs = (int *) malloc(this->m*sizeof(int));
     for (int i = 0; i < this->m ; i++)
@@ -365,6 +370,12 @@ simplicialPolyhedron& simplicialPolyhedron::simplifySimplexes(int * coeffs) {
     coeffs = (int *) realloc(coeffs,1*m3*sizeof(int));
 
   this->m = m3;
+
+  //free
+  free(Ap);
+  free(c);
+  free(p);
+  free(v);
 
   return *this;
   
@@ -451,11 +462,16 @@ simplicialPolyhedron simplicialPolyhedron::skeleton() const{
     memcpy(&B[(n-1)*m*i],A2,(n-1)*m*sizeof(int));
     if (i < n-1 )
       v[i]--;
+    free(A2);
   }
 
   res = simplicialPolyhedron((n-1)-1,n*m,B);
   res.sortSimplexes(); // ordenem *sense coefficients* per evitar cancelacions
   res.simplifySimplexes();  // eliminem duplicats
+
+  //free
+  free(B);
+  free(v);
   
   return res;
 
@@ -479,7 +495,11 @@ const simplicialPolyhedron& simplicialPolyhedron::binarySearch(const simplicialP
     b = (int *) malloc(P.length()*sizeof(int));
     for (int i = 0; i < P.length(); i++)
       b[i] = this->m;
-    return this->binarySearch(P,v,a,b);
+    this->binarySearch(P,v,a,b);
+    //free
+    free(a);
+    free(b);
+    return *this;
   }
   
   bool finish = true;
@@ -518,6 +538,9 @@ const simplicialPolyhedron& simplicialPolyhedron::binarySearch(const simplicialP
   	}
   
   }
+
+  //free
+  free(c);
 
   return this->binarySearch(P,v,a,b);
 }

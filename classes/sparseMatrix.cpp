@@ -76,19 +76,22 @@ sparseMatrix& sparseMatrix::operator=(const sparseMatrix& M) {
   this->numRows = M.numRows;
 
   if (this->rows)
-    this->rows = (int *) realloc(this->rows,(this->numRows+1)*sizeof(int));
-  else
+    free(this->rows);
+    //this->rows = (int *) realloc(this->rows,(this->numRows+1)*sizeof(int));
+  //else
     this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
   memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
   
   if (this->values)
-    this->values = (int *) realloc(this->values,M.length()*sizeof(int));
-  else  
+    free(this->values);
+    //this->values = (int *) realloc(this->values,M.length()*sizeof(int));
+  //else  
     this->values = (int *) malloc(M.length()*sizeof(int));
 
   if (this->cols)
-    this->cols = (int *) realloc(this->cols,M.length()*sizeof(int));
-  else
+    free(this->cols);
+    //this->cols = (int *) realloc(this->cols,M.length()*sizeof(int));
+  //else
     this->cols = (int *) malloc(M.length()*sizeof(int));
   memcpy(this->values,M.values,M.length()*sizeof(int));
   memcpy(this->cols,M.cols,M.length()*sizeof(int));
@@ -157,6 +160,7 @@ sparseMatrix& sparseMatrix::read_index_format(int numRows, int numCols, int leng
     this->mergeSort(length, cols2, 2, a);
     a[0] = cols2;
     this->mergeSort(length, rows2, 2, a);
+    free(a);
   }
 
   int * crows = (int *) malloc((numRows + 1)*sizeof(int));
@@ -171,6 +175,13 @@ sparseMatrix& sparseMatrix::read_index_format(int numRows, int numCols, int leng
   }
 
   *this = sparseMatrix(numRows,numCols,crows,cols2,values2);
+
+  //free
+  free(crows);
+  free(rows2);
+  free(cols2);
+  free(values2);
+
   return *this;
 }
 const sparseMatrix& sparseMatrix::index_format(int * rows, int * cols, int * values) const {
@@ -425,6 +436,20 @@ void sparseMatrix::mergeSort(int length, int * v, int auxLength, int * const * c
         i++;
       }
   }
+
+  //free
+
+  if (auxLength > 0 && aux != NULL) {
+    for ( int i = 0; i < auxLength; i++) {
+      free(aux1[i]);
+      free(aux2[i]);
+    }
+    free(aux1);
+    free(aux2);
+  }
+
+
+
 }
 
 int sparseMatrix::gcd(int n, int * v, int * c) const {
@@ -1023,7 +1048,14 @@ sparseMatrix sparseMatrix::operator+(const sparseMatrix& M) const {
                                &cols[rows[i]], &values[rows[i]]);
   }
 
-  return sparseMatrix(max(this->numRows,M.numRows),this->numCols,rows,cols,values);
+  sparseMatrix N(max(this->numRows,M.numRows),this->numCols,rows,cols,values);
+
+  free(values);
+  free(rows);
+  free(cols);
+
+  return N;
+
 }
 
 sparseMatrix sparseMatrix::operator[](int row) const {
@@ -1137,7 +1169,7 @@ void sparseMatrix::LDU_permutations(sparseMatrix * M, sparseMatrix * Mt, sparseM
 
 void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, const sparseMatrix * L, const sparseMatrix * U, int k, int d) const {
 
-    int * lu_rows = (int *) malloc((M->numRows + 1) *sizeof(int));
+    int * lu_rows = (int *) malloc(max((M->numRows + 1),M->numCols +1) *sizeof(int));
     int * lu_cols = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
     int * lu_values = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
     
@@ -1155,29 +1187,6 @@ void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, co
     }
     for (int r = L->cols[L->rows[k] + L->numValuesInRow(k) -1]+1; r < M->numRows; r++)
       lu_rows[r+1] = lu_rows[r];
-
-
-    int * lut_rows = (int *) malloc((Mt->numRows + 1) *sizeof(int));
-    int * lut_cols = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
-    int * lut_values = (int *) malloc(L->numValuesInRow(k)*U->numValuesInRow(k)*sizeof(int));
-    
-    lut_rows[0] = 0;
-    for (int i = 0, v = 0, r = -1; i < U->numValuesInRow(k); i++) {
-      while ( r < U->cols[U->rows[k]+i]) {
-        r++;
-        lu_rows[r+1] = lu_rows[r];
-      }
-      for (int j = 0; j < U->numValuesInRow(k); j++, v++) {
-        lu_values[v] = -L->values[L->rows[k]+i]*U->values[U->rows[k]+j];
-        lu_cols[v] = U->cols[U->rows[k] + j];
-        lu_rows[r+1]++;
-      }
-    }
-    for (int r = L->cols[L->rows[k] + L->numValuesInRow(k) -1]+1; r < M->numRows; r++)
-      lu_rows[r+1] = lu_rows[r];
-    
-    sparseMatrix * mLU = new sparseMatrix(M->numRows,M->numCols,lu_rows,lu_cols,lu_values);
-
 
     //*M = (*M)*d + *mLU;
 /*
@@ -1206,8 +1215,31 @@ void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, co
       M->rows[i+1] = M->rows[i] + a;
     }
 
+    free(M_rows);
+    free(M_cols);
+    free(M_values);
+
+    /////////////////////////
     // transpose
-    *mLU = mLU->transpose();
+
+    int * lut_rows = lu_rows;
+    int * lut_cols = lu_cols;
+    int * lut_values = lu_values;
+    
+    lut_rows[0] = 0;
+    for (int i = 0, v = 0, r = -1; i < U->numValuesInRow(k); i++) {
+      while ( r < U->cols[U->rows[k]+i]) {
+        r++;
+        lut_rows[r+1] = lut_rows[r];
+      }
+      for (int j = 0; j < L->numValuesInRow(k); j++, v++) {
+        lut_values[v] = -U->values[U->rows[k]+i]*L->values[L->rows[k]+j];
+        lut_cols[v] = L->cols[L->rows[k] + j];
+        lut_rows[r+1]++;
+      }
+    }
+    for (int r = U->cols[U->rows[k] + U->numValuesInRow(k) -1]+1; r < Mt->numRows; r++)
+      lut_rows[r+1] = lut_rows[r];
 
     int * Mt_rows = (int *) malloc((Mt->numRows - k + 1)*sizeof(int));
     int * Mt_cols = (int *) malloc((Mt->rows[Mt->numRows] - Mt->rows[k])*sizeof(int));
@@ -1222,16 +1254,20 @@ void sparseMatrix::LDU_calculation_dM_LU(sparseMatrix * M, sparseMatrix * Mt, co
 
     for (int i = k; i < Mt->numRows; i++) {
       int a = this->sumRows(Mt_rows[i+1 - k] - Mt_rows[i-k], &Mt_cols[Mt_rows[i-k] - Mt_rows[0]], &Mt_values[Mt_rows[i-k] - Mt_rows[0]],
-                      mLU->numValuesInRow(i), &mLU->cols[mLU->rows[i]], &mLU->values[mLU->rows[i]],
+                      lut_rows[i+1]-lut_rows[i], &lut_cols[lut_rows[i]], &lut_values[lut_rows[i]],
                       &Mt->cols[Mt->rows[i]], &Mt->values[Mt->rows[i]]);
       Mt->rows[i+1] = Mt->rows[i] + a;
     }
 
+    free(Mt_rows);
+    free(Mt_cols);
+    free(Mt_values);
+
+
+
     free(lu_rows);
     free(lu_cols);
     free(lu_values);
-
-    delete mLU;
 
     return;
 
@@ -1418,7 +1454,8 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
       g = this->gcd(2,coeffs2);
       coeffs[j] = coeffs2[0]/g;
       this->multiply(coeffs2[1]/g,rank-j,&coeffs[j+1]);
-            
+
+      free(coeffs2);            
     }
     
     // copy to global
@@ -1432,8 +1469,19 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
       }
 
     r[cnt_rows] = cnt_nonNullValues;
+
+    //free
+    free(coeffs);
+    free(col_coeffs);
   }
+
   sparseMatrix V(cnt_rows,U.numCols,r,c,v),W;
+
+  //free
+  free(r);
+  free(c);
+  free(v);
+
   return W.multiplyByTransposed(V,Q).transpose();
 }
 
@@ -1512,7 +1560,11 @@ sparseMatrix sparseMatrix::LXeqY(const sparseMatrix &Y) const {
   v = (int *) realloc(v,r[numRows]*sizeof(int));
 
   sparseMatrix W(numRows, numCols, r,c,v);
-//W.print_octave(cerr);
+
+  //free
+  free(c);
+  free(v);
+
   return W.transpose();
 }
 

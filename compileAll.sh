@@ -57,6 +57,6 @@ if [ "$matrices" = "1" ]; then
 fi
 
 echo "Compiling main";
-g++ classes/*.cpp main.cpp -I classes -o main
+g++ -g classes/*.cpp main.cpp -I classes -o main
 #g++ classes/*.cpp cellDecomposition.cpp -I classes -o cellDecomposition
 

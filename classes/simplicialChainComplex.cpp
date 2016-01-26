@@ -158,6 +158,8 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
           cerr << "searched in:" << endl;
           this->P[i].print(cerr);
         }
+
+      free(signs);
     }
 
     for (int j = 0; j <= this->P[i+1].length(); j++)
@@ -165,6 +167,11 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
 
     this->d[i] = sparseMatrix (this->P[i+1].length(),this->P[i].length(),rows,cols,values);
     this->d[i] = this->d[i].transpose();
+
+    //free
+    free(rows);
+    free(cols);
+    free(values);
   }
 
   return *this;
