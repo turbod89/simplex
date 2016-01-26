@@ -7,20 +7,35 @@ int main(int argc, char *argv[]) {
   simplicialPolyhedron P,Q;
   P.read(cin);
   simplicialChainComplex S(P);
-  //S.print(cout);
   
-  cout << P.length() << endl;
+  cout << "# SIMPLICIAL CHAIN COMPLEX" << endl;
+  S.print(cout);
   
-  cout << "Euler characteristic: " << S.eulerCharacteristic() << endl;
+  cout << "# EULER CHARACTERISTIC" << endl;
+  cout << S.eulerCharacteristic() << endl;
 
   for (int i = S.dim(); i >= 0 ; i--) {
     sparseMatrix H = S.getHomology(i);
-    cout << "Homology classes of grade " << i << endl;
-    if (H.size(1) == 1 )
+    cout << "# HOMOLOGY CLASSES OF GRADE " << i << endl;
+    if (H.size(1) == 1 ) {
       H.print(cout);
-    else if (H.size(1) > 1)
+    }
+    else if (H.size(1) > 1) {
       for (int j = 0; j < H.size(1); j++)
         H[j].print(cout);
+    }
+  }
+
+  for (int i = S.dim(); i >= 0 ; i--) {
+    sparseMatrix H = S.getCohomology(i);
+    cout << "# COHOMOLOGY CLASSES OF GRADE " << i << endl;
+    if (H.size(1) == 1 ) {
+      H.print(cout);
+    }
+    else if (H.size(1) > 1) {
+      for (int j = 0; j < H.size(1); j++)
+        H[j].print(cout);
+    }
   }
 
  /*

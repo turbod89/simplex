@@ -21,6 +21,18 @@
 #include "sparseMatrix.h"
 using namespace std;
 
+struct LDU_group {
+
+  sparseMatrix P;
+  sparseMatrix Q;
+  sparseMatrix L;
+  sparseMatrix Dl;
+  sparseMatrix Du;
+  sparseMatrix U;
+
+};
+
+
 class simplicialChainComplex {
 
   private:
@@ -74,6 +86,7 @@ class simplicialChainComplex {
   
   sparseMatrix flat(int i, const sparseMatrix & M) const;
   sparseMatrix getHomology(int i) const;
+  sparseMatrix getCohomology(int i) const;
   
 };
 

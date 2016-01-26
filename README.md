@@ -1,3 +1,5 @@
+1) INTRODUCCIO
+==============
 
 COM FUNCIONA:
 
@@ -22,19 +24,21 @@ Classes del tor:
 $ ./s1 | ./times | ./main
 
 
+2) FORMATS
+==========
+
+
 FORMAT DELS POLIEDRES SIMPLICIALS:
 
  - Dimensio + 1 del poliedra (ie, nombre de vertex dels simplexs)
  - Nombre de simplexs
  - Per columnes, la llista de vertexs de cada simplex.
 
- Exemple:
+ Exemple: (Poliedre corresponent a una S^1)
 
 2 3
  0 1 2
  1 2 0
-
-(Poliedre corresponent a una S^1)
 
 
 
@@ -65,6 +69,32 @@ Correspon a la matriu
 
 
 
+FORMAT DELS COMPLEXOS SIMPLICIALS
+
+  - Un numero N indicant la dimensio + 1 del complex
+  - Per a cada grau, desde 0 fins a N-1, el poliedre simplicial dels simplex
+  - Per a cada grau, desde 1 fins a N-1, la matriu (dispersa) de l'operador vora
+  - Un nombre que indica nombre de simplexs de dimensio maxima M.
+  - M valors (1's o -1's) indicant l'orientancio dels simplex maximals
+
+Exemple: (Complex simplicial corresponent al poliedre de una S^1)
+
+2
+1 3
+ 0 1 2
+2 3
+ 0 0 1
+ 1 2 2
+3 3
+ 0 2 4 6
+ 0 1 0 2 1 2
+ -1 -1 1 -1 1 1
+3
+ 1 -1 1
+
+
+3) PROGRAMES
+============
 
 
 FUNCIONS AMB POLIEDRES
