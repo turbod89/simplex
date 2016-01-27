@@ -33,7 +33,7 @@ while [ "$1" != "" ]; do
 done
 
 echo "Compiling headers";
-g++ classes/*.h
+g++ classes/*.h namespaces/*.h -I namespaces -I classes
 
 if [ "$polyhedrons" = "1" ]; then
   echo "Compiling simplicial polyhedrons tools";
@@ -57,6 +57,6 @@ if [ "$matrices" = "1" ]; then
 fi
 
 echo "Compiling main";
-g++ -g classes/*.cpp main.cpp -I classes -o main
+g++ -g namespaces/*.cpp classes/*.cpp main.cpp -I classes -I namespaces -o main
 #g++ classes/*.cpp cellDecomposition.cpp -I classes -o cellDecomposition
 

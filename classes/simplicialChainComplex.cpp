@@ -118,6 +118,7 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
   this->n = P.dim()+1;
   this->P = (simplicialPolyhedron *) malloc(this->n*sizeof(simplicialPolyhedron));
   this->d = (sparseMatrix *) malloc((this->n-1)*sizeof(sparseMatrix));
+  this->d_ldu = (LDU_group *) malloc((this->n-1)*sizeof(LDU_group));
   this->orientation = (int *) malloc(P.length()*sizeof(int));
   for (int i = 0; i < P.length() ; i++)
     this->orientation[i] = 1;
@@ -172,6 +173,23 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
     free(rows);
     free(cols);
     free(values);
+  }
+
+  // boundary LDU
+
+  for (int i = 0; i < this->n - 1; i++) {
+    this->d[i].LDU_efficient(this->d_ldu[i].L,this->d_ldu[i].Dl,this->d_ldu[i].U,this->d_ldu[i].P,this->d_ldu[i].Q);
+    this->d_ldu[i].Du = this->d_ldu[i].Dl; // tenen la mateixa forma, encara que no els mateixos valors
+    // actualitzem els valors
+    for (int j = 0; j < this->d_ldu[i].Du.length(); j++) {
+      this->d_ldu[i].Du.getValues()[j] = Tools::gcd(this->d_ldu[i].U.numValuesInRow(j), &this->d_ldu[i].U.getValues()[this->d_ldu[i].U.getRows()[j]]);
+      // ara els de U
+      if (this->d_ldu[i].Du.getValues()[j] != 1 && this->d_ldu[i].Du.getValues()[j] != -1)
+        for (int k = this->d_ldu[i].U.getRows()[j]; k < this->d_ldu[i].U.getRows()[j] + this->d_ldu[i].U.numValuesInRow(j); k++)
+          this->d_ldu[i].U.getValues()[k] /= this->d_ldu[i].Du.getValues()[j];
+    }
+
+
   }
 
   return *this;
@@ -481,27 +499,17 @@ sparseMatrix simplicialChainComplex::getHomology(int i) const {
 
   } else if (i == 0) {
 
-    sparseMatrix L1, D1, U1, P1, Q1;
-
-    this->d[0].LDU_efficient(L1,D1,U1,P1,Q1);
-
-    sparseMatrix P1tP0KerL0t = P1.transpose();
-    sparseMatrix ImL1 = L1;
-    sparseMatrix X = P1*ImL1.LComplementary(P1tP0KerL0t);
+    sparseMatrix P1tP0KerL0t = this->d_ldu[0].P.transpose();
+    sparseMatrix ImL1 = this->d_ldu[0].L;
+    sparseMatrix X = this->d_ldu[0].P*ImL1.LComplementary(P1tP0KerL0t);
 
     return X.transpose();
 
   } else if ( i < this->dim() && i > 0) {
-  
-    sparseMatrix L0, D0, U0, P0, Q0;
-    sparseMatrix L1, D1, U1, P1, Q1;
 
-    this->d[i-1].transpose().LDU_efficient(L0,D0,U0,P0,Q0);
-    this->d[i].LDU_efficient(L1,D1,U1,P1,Q1);
-
-    sparseMatrix P1tP0KerL0t = P1.transpose()*P0*(L0.transpose().ker());
-    sparseMatrix ImL1 = L1;
-    sparseMatrix X = P1*ImL1.LComplementary(P1tP0KerL0t);
+    sparseMatrix P1tP0KerL0t = this->d_ldu[i].P.transpose()*this->d_ldu[i-1].Q.transpose()*(this->d_ldu[i-1].U.ker());
+    sparseMatrix ImL1 = this->d_ldu[i].L;
+    sparseMatrix X = this->d_ldu[i].P*ImL1.LComplementary(P1tP0KerL0t);
 
     return X.transpose();
 
@@ -519,13 +527,9 @@ sparseMatrix simplicialChainComplex::getCohomology(int i) const {
 
   } else if (i == this->dim()) {
 
-    sparseMatrix L0, D0, U0, P0, Q0;
-
-    this->d[i-1].transpose().LDU_efficient(L0,D0,U0,P0,Q0);
-
-    sparseMatrix P0tP1KerL1t = P0.transpose();
-    sparseMatrix ImL0 = L0;
-    sparseMatrix X = P0*ImL0.LComplementary(P0tP1KerL1t);
+    sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q.transpose();
+    sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
+    sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
 
     return X.transpose();
 
@@ -537,9 +541,9 @@ sparseMatrix simplicialChainComplex::getCohomology(int i) const {
     this->d[i-1].transpose().LDU_efficient(L0,D0,U0,P0,Q0);
     this->d[i].LDU_efficient(L1,D1,U1,P1,Q1);
 
-    sparseMatrix P0tP1KerL1t = P0.transpose()*P1*(L1.transpose().ker());
-    sparseMatrix ImL0 = L0;
-    sparseMatrix X = P0*ImL0.LComplementary(P0tP1KerL1t);
+    sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q*this->d_ldu[i].P*(this->d_ldu[i].L.transpose().ker());
+    sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
+    sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
 
     return X.transpose();
 

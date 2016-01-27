@@ -18,6 +18,7 @@
 #include <fstream>
 #include <string.h>
 #include "simplicialPolyhedron.h"
+#include "tools.h"
 #include "sparseMatrix.h"
 using namespace std;
 
@@ -39,6 +40,7 @@ class simplicialChainComplex {
   
   simplicialPolyhedron * P;
   sparseMatrix * d;
+  LDU_group * d_ldu;
   int * orientation;
   int n;
 
