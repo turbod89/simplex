@@ -409,7 +409,6 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
 
   simplicialPolyhedron Q(k,M.length(),A);
   free(A);
-  
   // search them on maximal simplex
   
   int * start = (int *) malloc(Q.length()*sizeof(int));
@@ -445,9 +444,9 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
   this->P[this->dim() - k].subSearch(R,start,end);
   
   // put'em on a matrix
-  
+
   l = 0;
-  for (int i = 0; i < Q.length(); i++)
+  for (int i = 0; i < R.length(); i++)
     l += end[i] - start[i];
   
   int * rows = (int *) malloc(2*sizeof(int));
@@ -464,6 +463,11 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
     
   sparseMatrix N(1,this->P[this->dim() - k].length(), rows, cols, values);
   N.removeZeros();
+  
+  //free
+
+  free(start);
+  free(end);
   
   return N;
 

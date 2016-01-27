@@ -31,10 +31,15 @@ int main(int argc, char *argv[]) {
     cout << "# COHOMOLOGY CLASSES OF GRADE " << i << endl;
     if (H.size(1) == 1 ) {
       H.print(cout);
+      cout << "PD " << endl;
+      S.flat(i,H).print(cout);
     }
     else if (H.size(1) > 1) {
-      for (int j = 0; j < H.size(1); j++)
+      for (int j = 0; j < H.size(1); j++) {
         H[j].print(cout);
+        cout << "PD " << endl;
+        S.flat(i,H[j]).print(cout);
+      }
     }
   }
 
