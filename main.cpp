@@ -1,127 +1,89 @@
 #include <iostream>
+#include <ctime>
 #include "simplicialChainComplex.h"
 using namespace std;
 
+float timeMark(clock_t & c) {
+  float t = 1.0 * (clock() - c) / CLOCKS_PER_SEC;
+  c = clock();
+  return t;
+}
+
+
 int main(int argc, char *argv[]) {
+
+  clock_t c_start = clock();
 
   simplicialPolyhedron P,Q;
   P.read(cin);
+cerr << "Read polyhedron: " << timeMark(c_start) << "s" << endl;
   simplicialChainComplex S(P);
-  
+cerr << "Read and inflate simplicial Chain: " << timeMark(c_start) << "s" << endl;
   cout << "# SIMPLICIAL CHAIN COMPLEX" << endl;
   S.print(cout);
   
   cout << "# EULER CHARACTERISTIC" << endl;
   cout << S.eulerCharacteristic() << endl;
 
-  for (int i = S.dim(); i >= 0 ; i--) {
-    sparseMatrix H = S.getHomology(i);
-    cout << "# HOMOLOGY CLASSES OF GRADE " << i << endl;
-    if (H.size(1) == 1 ) {
-      H.print(cout);
-    }
-    else if (H.size(1) > 1) {
-      for (int j = 0; j < H.size(1); j++)
-        H[j].print(cout);
-    }
-  }
+  sparseMatrix  H[S.dim()+1];
 
   for (int i = S.dim(); i >= 0 ; i--) {
-    sparseMatrix H = S.getCohomology(i);
-    cout << "# COHOMOLOGY CLASSES OF GRADE " << i << endl;
-    if (H.size(1) == 1 ) {
-      H.print(cout);
-      cout << "PD " << endl;
-      S.flat(i,H).print(cout);
-    }
-    else if (H.size(1) > 1) {
-      for (int j = 0; j < H.size(1); j++) {
-        H[j].print(cout);
-        cout << "PD " << endl;
-        S.flat(i,H[j]).print(cout);
+    H[i] = S.getHomology(i);
+cerr << "Find homology classes of grade " << i << ": " << timeMark(c_start) << "s" << endl;
+    cout << "# HOMOLOGY CLASSES OF GRADE " << i << endl;
+    if (H[i].size(1) == 1 ) {
+      H[i].print(cout);
+    } else if (H[i].size(1) > 1) {
+      for (int j = 0; j < H[i].size(1); j++) {
+        H[i][j].print(cout);
       }
     }
   }
 
- /*
-  sparseMatrix dd0 = S.boundaryOperator(1).transpose();
-  sparseMatrix dd1 = S.boundaryOperator(2).transpose();
+  sparseMatrix cH[S.dim()+1];
 
-  sparseMatrix L0, D0, U0, P0, Q0;
-  sparseMatrix L1, D1, U1, P1, Q1;
+  for (int i = S.dim(); i >= 0 ; i--) {
+    cH[i] = S.getCohomology(i);
+cerr << "Find cohomology classes of grade " << i << ": " << timeMark(c_start) << "s" << endl;
+    cout << "# COHOMOLOGY CLASSES OF GRADE " << i << endl;
+    if (cH[i].size(1) == 1 ) {
+      cH[i].print(cout);
+    } else if (cH[i].size(1) > 1) {
+      for (int j = 0; j < cH[i].size(1); j++) {
+        cH[i][j].print(cout);
+      }
+    }
+  }
 
-  dd0.LDU_efficient(L0,D0,U0,P0,Q0);
-  dd1.LDU_efficient(L1,D1,U1,P1,Q1);
+  cout << endl << endl << endl;
 
-/* homology
+  for (int i = S.dim(); i > 0 ; i--) {
+    cout << "# PD OF COHOMOLOGY CLASSES OF GRADE " << i << endl;
+    sparseMatrix L,D,U,Q,P;
+    H[S.dim()-i].transpose().LDU_efficient(L,D,U,P,Q);
 
-  sparseMatrix Q1P0KerL0t = Q1*P0*(L0.transpose().ker());
-//Q1P0KerL0t.print(cerr);
-  sparseMatrix ImU1t = U1.transpose();
-//ImU1t.print(cerr);
-  sparseMatrix X = Q1.transpose()*ImU1t.LComplementary(Q1P0KerL0t);
+    for (int j = 0; j < cH[i].size(1) ; j++) {
+      sparseMatrix C;
+      if (cH[i].size(1) == 1)
+        C = cH[i];
+      else
+        C = cH[i][j];
 
-  //P0KerL0t.print_octave(cout);
-  //dd0.transpose().ker().print_octave(cout);
-  for (int i = 0; i < X.size(2); i++)
-      X.transpose()[i].print(cout);
-
-
-*/
-
-/* cohomology
-
-  sparseMatrix P0tQ1tKerU1 = P0.transpose()*Q1.transpose()*(U1.ker());
-//Q1P0KerL0t.print(cerr);
-  sparseMatrix ImL0 = L0;
-//ImU1t.print(cerr);
-  sparseMatrix X = P0*ImL0.LComplementary(P0tQ1tKerU1);
-
-  //P0KerL0t.print_octave(cout);
-  //dd0.transpose().ker().print_octave(cout);
-  for (int i = 0; i < X.size(2); i++)
-      X.transpose()[i].print(cout);
+      sparseMatrix PD_C = S.flat(i,C);
 
 
-*/
+      PD_C = S.d_ldu[S.dim()-i].P * S.d_ldu[S.dim()-i].L.LComplementary(S.d_ldu[S.dim()-i].P.transpose()*PD_C.transpose());
+
+      sparseMatrix X = L.LXeqY(P.transpose()*PD_C);
+      X.print_octave(cout);
+    }
+
+  }
 
 
-/*
-  sparseMatrix Kerd1 = dd0.transpose().ker();
-  sparseMatrix P0tKer = P0.transpose()*L0.transpose().ker();
-  cout << "dd0 = ";
-  dd0.print_octave(cout);
-  cout << "L0 = ";
-  L0.print_octave(cout);
-  cout << "D0 = ";
-  D0.print_octave(cout);
-  cout << "U0 = ";
-  U0.print_octave(cout);
-  cout << "P0 = ";
-  P0.print_octave(cout);
-  cout << "Q0 = ";
-  Q0.print_octave(cout);
-  //Kerd1.print_octave(cout);
-  //P0tKer.print_octave(cout);
-*/
 
-  /*
-  cout << "Fundamental Class: " << endl;
-  S.fundamentalClass().print_full(cout);
-  cout << "and its boundary has " << S.boundary(S.dim(),S.fundamentalClass()).length() << " simplexes." << endl;
-  cout << "Its support:" << endl;
-  S.support(S.dim()-1,S.boundary(S.dim(),S.fundamentalClass())).print(cout);
-  
-  sparseMatrix L,D,U,R,Q;
-  
-  S.boundaryOperator(S.dim()).print(cout);
-  
-  sparseMatrix H_n = S.boundaryOperator(S.dim()).ker().transpose();
-  
-  for (int i = 0; i < H_n.size(1); i++) {
-    cout << "The " << i+1 << "-th maximal class of homology has support: " << endl;
-    S.support(S.dim(),H_n[i]).print(cout);
-  } */
+  //delete[] H;
+  //delete[] cH;
 
   return 0;
 }

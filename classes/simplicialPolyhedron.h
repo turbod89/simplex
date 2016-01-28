@@ -17,6 +17,7 @@
 #include <cstdlib> 
 #include <fstream>
 #include <string.h>
+#include "tools.h"
 using namespace std;
 
 class simplicialPolyhedron {
@@ -29,11 +30,7 @@ class simplicialPolyhedron {
 
   private:
 
-  bool leq(int n, int const * const a, int const * const b) const;
-  bool eq(int n, int const * const a, int const * const b ) const;
-  void swap(int n, int * const a, int * const b) const;
   int vectorMax(int n, int const * const A) const;
-  int mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions = false) const;
   int bubbleSort(int n, int * const v) const;
   bool search(int n1, int m, int * A, int n2, int const * const v, int & start, int & end) const;
   void vcat(int n1, int n2, int m, int * const C, int const * const A, int const * const B) const;

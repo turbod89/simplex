@@ -1,68 +1,5 @@
 #include "simplicialChainComplex.h"
 
-bool simplicialChainComplex::leq(int n, int const * const a, int const * const b ) const {
-	for (int i = 0 ; i < n ; i++)
-		if (a[i] != b[i])
-		   return a[i] < b[i];
-	return true;
-}
-
-bool simplicialChainComplex::eq(int n, int const * const a, int const * const b ) const {
-	for (int i = 0 ; i < n ; i++)
-		if (a[i] != b[i])
-		   return false;
-	return true;
-}
-
-void simplicialChainComplex::swap(int n, int * const a, int * const b) const {
-	int c;
-	for ( int i = 0 ; i < n ; i++) {
-		c = a[i];
-		a[i] = b[i];
-		b[i] = c;
-	}
-}
-
-int simplicialChainComplex::mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions) const{
-  
-  if (m < 2)
-    return m ;
-  
-  int m1 = m/2, m2 = m - m1;
-  int * a = (int *) malloc(n*m1*sizeof(int));
-  int * b = (int *) malloc(n*m2*sizeof(int));
-  memcpy(a,A,n*m1*sizeof(int));
-  memcpy(b,&A[n*m1],n*m2*sizeof(int));
-
-  m1 = this->mergeSortBlocks(n, m1, a, deleteRepetitions);
-  m2 = this->mergeSortBlocks(n, m2, b, deleteRepetitions);
-  
-  // merge
-  
-  int repetitions = 0;
-  
-  for (int i = 0 , j = 0; i < m1 || j < m2;)
-    if (deleteRepetitions && i < m1 && j < m2 && eq(n,&a[n*i],&b[n*j]) ) {
-      memcpy(&A[n*(i+j-repetitions)],&a[n*i],n*sizeof(int));
-      i++;
-      j++;
-      repetitions++;
-    } else if ( i < m1 && (j >= m2 || leq(n,&a[n*i],&b[n*j]) )) {
-      memcpy(&A[n*(i+j-repetitions)],&a[n*i],n*sizeof(int));
-      i++;
-    } else {
-      memcpy(&A[n*(i+j-repetitions)],&b[n*j],n*sizeof(int));
-      j++;
-    }
-  
-  repetitions += m - m1 - m2;
-  
-  if (repetitions > 0)
-    A = (int *) realloc(A,n*(m-repetitions)*sizeof(int));
-  
-  return m - repetitions;
-}
-
 int simplicialChainComplex::bubbleSort(int n, int * const v) const {
 
   if (n < 1)
@@ -535,12 +472,6 @@ sparseMatrix simplicialChainComplex::getCohomology(int i) const {
 
   } else if ( i < this->dim() && i > 0) {
   
-    sparseMatrix L0, D0, U0, P0, Q0;
-    sparseMatrix L1, D1, U1, P1, Q1;
-
-    this->d[i-1].transpose().LDU_efficient(L0,D0,U0,P0,Q0);
-    this->d[i].LDU_efficient(L1,D1,U1,P1,Q1);
-
     sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q*this->d_ldu[i].P*(this->d_ldu[i].L.transpose().ker());
     sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
     sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);

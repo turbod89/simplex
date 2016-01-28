@@ -17,6 +17,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string.h>
+#include "tools.h"
 using namespace std;
 
 class sparseMatrix {
@@ -33,7 +34,6 @@ class sparseMatrix {
     int binary_search_position(int length, const int * const v, int needle) const;
     int binary_search(int length, const int * const v, int needle) const;
     void mergeSort(int length, int * v,int auxLength = 0, int * const * const aux = NULL) const;
-    int gcd(int n, int * v, int * c = NULL) const;
     int LDU_full(int n, int m, int * const M, int * const L, int * const D, int * const U, int * const rowPerm, int * const colPerm) const;
     int minAbs(int n, int const * const v) const;
     int maxAbs(int n, int const * const v) const;

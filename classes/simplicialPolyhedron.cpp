@@ -1,28 +1,5 @@
 #include "simplicialPolyhedron.h"
 
-bool simplicialPolyhedron::leq(int n, int const * const a, int const * const b ) const {
-	for (int i = 0 ; i < n ; i++)
-		if (a[i] != b[i])
-		   return a[i] < b[i];
-	return true;
-}
-
-bool simplicialPolyhedron::eq(int n, int const * const a, int const * const b ) const {
-	for (int i = 0 ; i < n ; i++)
-		if (a[i] != b[i])
-		   return false;
-	return true;
-}
-
-void simplicialPolyhedron::swap(int n, int * const a, int * const b) const {
-	int c;
-	for ( int i = 0 ; i < n ; i++) {
-		c = a[i];
-		a[i] = b[i];
-		b[i] = c;
-	}
-}
-
 int simplicialPolyhedron::vectorMax(int n, int const * const A) const {
   if (n <= 0)
     return -1;
@@ -33,50 +10,6 @@ int simplicialPolyhedron::vectorMax(int n, int const * const A) const {
   return M;
 }
 
-int simplicialPolyhedron::mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions) const{
-  
-  if (m < 2)
-    return m ;
-  
-  int m1 = m/2, m2 = m - m1;
-  int * a = (int *) malloc(n*m1*sizeof(int));
-  int * b = (int *) malloc(n*m2*sizeof(int));
-  memcpy(a,A,n*m1*sizeof(int));
-  memcpy(b,&A[n*m1],n*m2*sizeof(int));
-
-  m1 = this->mergeSortBlocks(n, m1, a, deleteRepetitions);
-  m2 = this->mergeSortBlocks(n, m2, b, deleteRepetitions);
-  
-  // merge
-  
-  int repetitions = 0;
-  
-  for (int i = 0 , j = 0; i < m1 || j < m2;)
-    if (deleteRepetitions && i < m1 && j < m2 && eq(n,&a[n*i],&b[n*j]) ) {
-      memcpy(&A[n*(i+j-repetitions)],&a[n*i],n*sizeof(int));
-      i++;
-      j++;
-      repetitions++;
-    } else if ( i < m1 && (j >= m2 || leq(n,&a[n*i],&b[n*j]) )) {
-      memcpy(&A[n*(i+j-repetitions)],&a[n*i],n*sizeof(int));
-      i++;
-    } else {
-      memcpy(&A[n*(i+j-repetitions)],&b[n*j],n*sizeof(int));
-      j++;
-    }
-  
-  repetitions += m - m1 - m2;
-  
-  if (repetitions > 0)
-    A = (int *) realloc(A,n*(m-repetitions)*sizeof(int));
-
-  //return
-  free(a);
-  free(b);
-
-  
-  return m - repetitions;
-}
 
 int simplicialPolyhedron::bubbleSort(int n, int * const v) const {
 
@@ -110,20 +43,20 @@ bool simplicialPolyhedron::search(int n1, int m, int * A, int n2, int const * co
     
   int c = (start + end)/2;
   
-  if (!this->leq(n2,&A[n1*c],v)) {
+  if (!Tools::leq(n2,&A[n1*c],v)) {
     end = c;
     return this->search(n1,m,A,n2,v,start,end);
-  } else if (!this->leq(n2,v,&A[n1*c])) {
+  } else if (!Tools::leq(n2,v,&A[n1*c])) {
     start = c + 1;
     return this->search(n1,m,A,n2,v,start,end);
   } else {
     // now we have A[n1*c] == v
-    if (!this->leq(n2,v,&A[n1*start]) ){
+    if (!Tools::leq(n2,v,&A[n1*start]) ){
       start++;
       this->search(n1,m,A,n2,v,start,c); // find start of the block
     }
 
-    if (!this->leq(n2,&A[n1*(end-1)],v) ) {
+    if (!Tools::leq(n2,&A[n1*(end-1)],v) ) {
       end--;
       this->search(n1,m,A,n2,v,c,end); // find end of the block
     }
@@ -320,7 +253,7 @@ simplicialPolyhedron& simplicialPolyhedron::simplifySimplexes(int * coeffs) {
   // sort among them and obtain
   // the corresponding permutation
   this->vcat(this->n,1,this->m,Ap,this->A,p);
-  this->mergeSortBlocks(this->n+1,this->m,Ap);
+  Tools::mergeSortBlocks(this->n+1,this->m,Ap);
 
   int * v = (int *) malloc(this->n*sizeof(int));
   for (int i = 0; i < this->n; i++)
@@ -331,7 +264,7 @@ simplicialPolyhedron& simplicialPolyhedron::simplifySimplexes(int * coeffs) {
   // count number of different simplexes
   int m2 = 0; // number of DIFERENT simplexes
   for (int i = 0; i < this->m; i++)
-    if ( i == 0 || !this->eq(this->n,&Ap[this->n*(i-1)],&Ap[this->n*i]) )
+    if ( i == 0 || !Tools::eq(this->n,&Ap[this->n*(i-1)],&Ap[this->n*i]) )
       m2++;
   
   // group by
@@ -344,7 +277,7 @@ simplicialPolyhedron& simplicialPolyhedron::simplifySimplexes(int * coeffs) {
     coeffs = (int *) realloc(coeffs,m2*sizeof(int));
   int cnt = -1;
   for (int i = 0; i < this->m; i++)
-    if ( i == 0 || !this->eq(n,&Ap[this->n*(i-1)],&Ap[this->n*i]) ) {
+    if ( i == 0 || !Tools::eq(n,&Ap[this->n*(i-1)],&Ap[this->n*i]) ) {
       cnt++;
       memcpy(&A[n*cnt],&Ap[this->n*i],this->n*sizeof(int));
       memcpy(&coeffs[1*cnt],&c[p[i]],1*sizeof(int));
@@ -519,7 +452,7 @@ const simplicialPolyhedron& simplicialPolyhedron::binarySearch(const simplicialP
     if (a[i] >= b[i]) {
       // vam trobar la solucio en una iteracio
       // anterior. No fem res
-    } else if ( this->eq(this->n,v1,v2) ) {
+    } else if ( Tools::eq(this->n,v1,v2) ) {
   	  // solucio trobada
   	  v[i] = c[i];
   	  a[i] = c[i];
@@ -529,7 +462,7 @@ const simplicialPolyhedron& simplicialPolyhedron::binarySearch(const simplicialP
   	  v[i] = -1;
   	  a[i] = c[i];
   	  b[i] = c[i];	  
-  	} else if ( this->leq(this->n,v1,v2) ) {
+  	} else if ( Tools::leq(this->n,v1,v2) ) {
   	  //ens restringim a la dreta
   	  a[i] = c[i];
   	} else {

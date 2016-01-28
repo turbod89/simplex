@@ -40,21 +40,17 @@ class simplicialChainComplex {
   
   simplicialPolyhedron * P;
   sparseMatrix * d;
-  LDU_group * d_ldu;
+  
   int * orientation;
   int n;
 
-  private:
-  
-  bool leq(int n, int const * const a, int const * const b) const;
-  bool eq(int n, int const * const a, int const * const b ) const;
-  void swap(int n, int * const a, int * const b) const;
-  int mergeSortBlocks(int n, int m, int * A, bool deleteRepetitions = false) const;
   int bubbleSort(int n, int * const v) const;
   void vcat(int n1, int n2, int m, int * const C, int const * const A, int const * const B) const;
   void vsplit(int n, int m, int * A, int k, int const * const v, int * const B = NULL) const;
     
   public:
+
+LDU_group * d_ldu;
 
   simplicialChainComplex& inflate(const simplicialPolyhedron& P);
   simplicialPolyhedron deflate(int * sign = NULL) const;

@@ -74,28 +74,26 @@ sparseMatrix& sparseMatrix::operator=(const sparseMatrix& M) {
 
   this->numCols = M.numCols;
   this->numRows = M.numRows;
-
-  if (this->rows)
+  if (this->rows && !(this->rows == NULL))
     free(this->rows);
     //this->rows = (int *) realloc(this->rows,(this->numRows+1)*sizeof(int));
   //else
     this->rows = (int *) malloc((this->numRows+1)*sizeof(int));
   memcpy(this->rows,M.rows,(this->numRows+1)*sizeof(int));
-  
-  if (this->values)
+
+  if (this->values && this->values != NULL)
     free(this->values);
     //this->values = (int *) realloc(this->values,M.length()*sizeof(int));
   //else  
     this->values = (int *) malloc(M.length()*sizeof(int));
 
-  if (this->cols)
+  if (this->cols && this->cols != NULL)
     free(this->cols);
     //this->cols = (int *) realloc(this->cols,M.length()*sizeof(int));
   //else
     this->cols = (int *) malloc(M.length()*sizeof(int));
   memcpy(this->values,M.values,M.length()*sizeof(int));
   memcpy(this->cols,M.cols,M.length()*sizeof(int));
-  
   return *this;
 }
 
@@ -452,91 +450,6 @@ void sparseMatrix::mergeSort(int length, int * v, int auxLength, int * const * c
 
 }
 
-int sparseMatrix::gcd(int n, int * v, int * c) const {
-
-  int indexMin = -1;
-  int min = 0;
-  int numNonZeros = 0;
-  
-  for (int i = 0; i < n ; i++)
-    if (v[i] != 0)
-      numNonZeros++;
-  
-  if (numNonZeros == 0)
-    return 0;
-  
-  for (int i = 0; i < n ; i++)
-    if (v[i] != 0 && (min == 0 || v[i] < min) ) {
-      indexMin = i;
-      min = v[i];
-    }
-  
-  if (numNonZeros == 1) {
-    
-    if ( c != NULL)
-      for (int i = 0; i < n ; i++)
-        if (i != indexMin)
-          c[i] = 0;
-        else
-          c[i] = 1;
-        
-    return v[indexMin];
-    
-  } else if (min < 0) {
-    // cas amb negatius
-    
-    int * signs = (int *) malloc(n*sizeof(int));
-    int * v2 = (int *) malloc(n*sizeof(int));
-
-    for (int i = 0; i < n ; i++)
-      if (v[i] < 0) {
-        v2[i] = -v[i];
-        signs[i] = -1;
-      } else if (v[i] > 0) {
-        v2[i] = v[i];
-        signs[i] = 1;
-      } else {
-        v2[i] = 0;
-        signs[i] = 0;
-      }
-      
-    int g = this->gcd(n,v2,c);
-    
-    if ( c != NULL)
-      for (int i = 0; i < n ; i++)
-        if ( v[i] != 0)
-          c[i] *= signs[i];
-    
-    return g;
-
-  } else {
-    // cas general
-    int * r = (int *) malloc(n*sizeof(int));
-
-    for (int i = 0; i < n ; i++)
-      if (v[i] == 0) {
-        r[i] = 0;
-      } else if (i != indexMin) {
-        r[i] = v[i]%v[indexMin];
-      } else {
-        r[i] = v[i];
-      }
-  
-    int g = this->gcd(n,r,c);
- 
-    if ( c != NULL)
-      for (int i = 0; i < n ; i++)
-        if (i != indexMin) {
-          c[indexMin] -= c[i]*((v[i]-r[i])/v[indexMin]);
-        }
-      
-    return g;  
-  }
-      
-  return 0;
-
-}
-
 int sparseMatrix::LDU_full(int n, int m, int * const M, int * const L, int * const D, int * const U, int * const rowPerm, int * const colPerm) const {
   
   // Nota: La matriu L esta transposta, per conveniencia del calcul
@@ -616,7 +529,7 @@ int sparseMatrix::LDU_full(int n, int m, int * const M, int * const L, int * con
     for (int i = k; i < n; i++)
       L[k*n + i] = M[i*m + k]; // L esta transposta
 
-    int g = this->gcd(n - k, &L[k*n + k]);
+    int g = Tools::gcd(n - k, &L[k*n + k]);
     int d = M[k*m + k]/g;
 
     for (int i = k; i < n; i++)
@@ -1349,7 +1262,7 @@ const sparseMatrix& sparseMatrix::LDU_efficient(sparseMatrix& L, sparseMatrix& D
 
     // diagonal
     int M_numValuesInCol = (*M_trans).numValuesInRow(k);
-    int g = this->gcd(M_numValuesInCol,&(*M_trans).values[(*M_trans).rows[k]]);
+    int g = Tools::gcd(M_numValuesInCol,&(*M_trans).values[(*M_trans).rows[k]]);
     int d = M->values[M->rows[k]] / g;
 
     if (d < 0) {
@@ -1433,7 +1346,7 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
     
     coeffs[rank] = values[0];
     
-    int g = this->gcd(2,&coeffs[rank-1]);
+    int g = Tools::gcd(2,&coeffs[rank-1]);
     coeffs[rank-1] /= g;
     coeffs[rank] /= g;
     
@@ -1451,7 +1364,7 @@ cerr << "Violation of assertion: In sparseMatrix::ker()" << endl;
       
       coeffs2[1] = values[0];
       
-      g = this->gcd(2,coeffs2);
+      g = Tools::gcd(2,coeffs2);
       coeffs[j] = coeffs2[0]/g;
       this->multiply(coeffs2[1]/g,rank-j,&coeffs[j+1]);
 
@@ -1495,7 +1408,7 @@ sparseMatrix sparseMatrix::LXeqY(const sparseMatrix &Y) const {
   int * r = (int *) malloc((numRows+1)*sizeof(int));
   int * c = (int *) malloc((numRows*numCols)*sizeof(int));
   int * v = (int *) malloc((numRows*numCols)*sizeof(int));
-
+//cerr << this->size(1) << " x " << this->size(2) << " " << Y.size(1) << " x " << Y.size(2)  << endl;
   r[0] = 0;
   for (int row = 0; row < numRows; row++) {
     int * local_c = &c[r[row]];
@@ -1543,7 +1456,7 @@ sparseMatrix sparseMatrix::LXeqY(const sparseMatrix &Y) const {
     // now check excedent conditions
 
     for (int i = this->numCols ; isThisRowPossible && i < Y.numRows; i++) {
-      int a = this->multiplyRows(nvr, local_c, local_v, this->numValuesInRow(i), &this->cols[this->rows[row]],&this->values[this->rows[row]] );
+      int a = this->multiplyRows(nvr, local_c, local_v, this->numValuesInRow(i), &this->cols[this->rows[i]],&this->values[this->rows[i]] );
       isThisRowPossible = (a == Y(i,row));
     }
 
@@ -1577,8 +1490,11 @@ sparseMatrix sparseMatrix::LComplementary(const sparseMatrix &Y) const {
   sparseMatrix Y2(this->numCols,Y.size(2),Y.getRows(),Y.getCols(),Y.getValues());
   sparseMatrix X = L.LXeqY(Y2);
 
-  sparseMatrix A = (*this)*X +Y*(-1);
+//cerr << this->size(1) << " x " << this->size(2) << " " << X.size(1) << " x " << X.size(2)  << endl;
 
+
+  sparseMatrix A = (*this)*X +Y*(-1);
+  // Aqui es on triga
   sparseMatrix l,d,u,p,q;
   A.LDU_efficient(l,d,u,p,q);
 
