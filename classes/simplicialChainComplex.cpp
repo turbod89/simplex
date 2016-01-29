@@ -356,6 +356,41 @@ simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& 
 
 sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
 
+
+  if (M.size(1) > 1) {
+
+    //maybe not the fastest way
+    //but it works
+
+    sparseMatrix N[M.size(1)];
+    for (int i = 0; i < M.size(1); i++) {
+      N[i] = this->flat(k,M[i]);
+    }
+
+    int * rows = (int *) malloc((M.size(1)+1)*sizeof(int));
+    rows[0] = 0;
+    for (int i = 0; i < M.size(1); i++)
+      rows[i+1] = rows[i] + N[i].length();
+    
+    int * cols = (int *) malloc(rows[M.size(1)]*sizeof(int));
+    int * values = (int *) malloc(rows[M.size(1)]*sizeof(int));
+
+    for (int i = 0; i < M.size(1); i++) {
+      memcpy(&cols[rows[i]],N[i].getCols(), N[i].length()*sizeof(int));
+      memcpy(&values[rows[i]],N[i].getValues(), N[i].length()*sizeof(int));
+    }
+
+    sparseMatrix R(M.size(1),N[0].size(2), rows, cols, values);
+  
+    //free
+
+    free(rows);
+    free(cols);
+    free(values);
+  
+    return R;
+  }
+
   int * A = (int *) malloc((k+1)*M.length()*sizeof(int));
   
   // copy k-simplexes to A
@@ -390,7 +425,6 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
   free(start);
   free(end);
   R.simplifySimplexes(signs);
-  
   // search them on (dim - k) - simplexes
   
   start = (int *) malloc(R.length()*sizeof(int));
@@ -409,7 +443,7 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
   rows[1] = l;
   int * cols = (int *) malloc(l*sizeof(int));
   int * values = (int *) malloc(l*sizeof(int));
-  
+
   for (int i = 0, cnt = 0 ; i < R.length(); i++)
     for (int j = start[i]; j < end[i]; j++, cnt++) {
       cols[cnt] = j;
@@ -423,6 +457,10 @@ sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
 
   free(start);
   free(end);
+  free(signs);
+  free(rows);
+  free(cols);
+  free(values);
   
   return N;
 
@@ -481,5 +519,21 @@ sparseMatrix simplicialChainComplex::getCohomology(int i) const {
   }
 
   return sparseMatrix();
+
+}
+
+sparseMatrix simplicialChainComplex::getHomologyRepresentatives(int i, sparseMatrix M) const {
+
+    sparseMatrix L,D,U,Q,P;
+    this->getHomology(i).transpose().LDU_efficient(L,D,U,P,Q);
+    if (i < this->dim()) {
+      M = this->d_ldu[i].P * this->d_ldu[i].L.LComplementary(this->d_ldu[i].P.transpose()*M.transpose());
+    } else {
+      // no boundaries to remove
+      M = M.transpose();
+    }
+
+    sparseMatrix X = L.LXeqY(P.transpose()*M);
+    return X;
 
 }

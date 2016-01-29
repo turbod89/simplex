@@ -57,27 +57,25 @@ cerr << "Find cohomology classes of grade " << i << ": " << timeMark(c_start) <<
 
   cout << endl << endl << endl;
 
-  for (int i = S.dim(); i > 0 ; i--) {
-    cout << "# PD OF COHOMOLOGY CLASSES OF GRADE " << i << endl;
+  for (int i = S.dim(); i >= 0 ; i--) {
+    cout << "# PD OF COHOMOLOGY CLASSES (IN HOMOLOGY/COHOMOLOGY BASES ABOVE) OF GRADE " << i << endl;
+    sparseMatrix PD_C = S.flat(i,cH[i]);
+cerr << "Calcule Poincare dual of classes of grade " << i << ": " << timeMark(c_start) << "s" << endl;
+    /*
     sparseMatrix L,D,U,Q,P;
     H[S.dim()-i].transpose().LDU_efficient(L,D,U,P,Q);
-
-    for (int j = 0; j < cH[i].size(1) ; j++) {
-      sparseMatrix C;
-      if (cH[i].size(1) == 1)
-        C = cH[i];
-      else
-        C = cH[i][j];
-
-      sparseMatrix PD_C = S.flat(i,C);
-
-
+    if (i > 0) {
       PD_C = S.d_ldu[S.dim()-i].P * S.d_ldu[S.dim()-i].L.LComplementary(S.d_ldu[S.dim()-i].P.transpose()*PD_C.transpose());
-
-      sparseMatrix X = L.LXeqY(P.transpose()*PD_C);
-      X.print_octave(cout);
+    } else {
+      // no boundaries to remove
+      PD_C = PD_C.transpose();
     }
 
+    sparseMatrix X = L.LXeqY(P.transpose()*PD_C);
+    X.print_octave(cout);
+    */
+    S.getHomologyRepresentatives(S.dim()-i,PD_C).print_octave(cout);
+cerr << "Calcule representatives: " << timeMark(c_start) << "s" << endl;
   }
 
 
