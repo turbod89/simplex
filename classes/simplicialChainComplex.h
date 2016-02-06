@@ -82,10 +82,12 @@ LDU_group * d_ldu;
   
   //sparseMatrix cup(int k, const sparseMatrix& M, int l, const sparseMatrix& N) const;
   
+  sparseMatrix cup(int k1, const sparseMatrix & M1, int k2, const sparseMatrix & M2) const;
   sparseMatrix flat(int i, const sparseMatrix & M) const;
   sparseMatrix getHomology(int i) const;
   sparseMatrix getCohomology(int i) const;
   sparseMatrix getHomologyRepresentatives(int i, sparseMatrix M) const;
+  sparseMatrix getCohomologyRepresentatives(int i, sparseMatrix M) const;
   
 };
 

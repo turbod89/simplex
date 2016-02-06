@@ -354,6 +354,73 @@ simplicialPolyhedron simplicialChainComplex::support(int i, const sparseMatrix& 
 }
 */
 
+sparseMatrix simplicialChainComplex::cup(int k1, const sparseMatrix & M1, int k2, const sparseMatrix & M2) const {
+  
+  int numRows = (M1.size(1) * M2.size(1) );
+  int * rows = (int *) calloc((numRows +1) ,sizeof(int));
+
+  if (k1 + k2 > this->dim() || k1 < 0 || k2 < 0) {
+    sparseMatrix N(numRows,0,rows,NULL,NULL);
+    free(rows);
+    return N;
+  }
+  // allocate all memory
+  int numCols = this->P[k1 + k2].length();
+  int * cols = (int *) malloc(numRows *numCols *sizeof(int));
+  int * values = (int *) malloc(numRows *numCols *sizeof(int));
+  int * simplex = (int *) malloc((k1+k2+1)*sizeof(int));
+  rows[0] = 0;
+  for (int i = 0, lastRow = 0; i < M1.size(1); i++)
+    for (int j = 0; j < M2.size(1) ; j++, lastRow++) {
+      // prepare
+      rows[lastRow + 1] = rows[lastRow];
+
+      const int * local_cols1 = &M1.getCols()[M1.getRows()[i]];
+      const int * local_values1 = &M1.getValues()[M1.getRows()[i]];
+      const int * local_cols2 = &M2.getCols()[M2.getRows()[j]];
+      const int * local_values2 = &M2.getValues()[M2.getRows()[j]];
+      // calcule first bound of possible values
+      for (int k = 0; k < M1.numValuesInRow(i); k++ )
+        for (int l = 0; l < M2.numValuesInRow(j); l++ )
+          // values last vertex of first simplex coincides with first vertex of the second simplex
+          if (this->P[k1].values()[local_cols1[k]*(k1+1)+k1] == this->P[k2].values()[local_cols2[l]*(k2+1)]) {
+            // simplex resulting of contatenate exists
+/*for (int lcerr = 0; lcerr < k1+1; lcerr++ )
+  cerr << " " << this->P[k1].values()[local_cols1[k]*(k1+1) + lcerr];
+cerr << endl;
+for (int lcerr = 0; lcerr < k2+1; lcerr++ )
+  cerr << " " << this->P[k2].values()[local_cols2[l]*(k2+1) + lcerr];
+cerr << endl;
+*/
+            memcpy(simplex,&this->P[k1].values()[local_cols1[k]*(k1+1)],(k1+1)*sizeof(int));
+            memcpy(&simplex[k1],&this->P[k2].values()[local_cols2[l]*(k2+1)],(k2+1)*sizeof(int)); // note that first vertex is superposed
+            simplicialPolyhedron S(k1 + k2,1,simplex);
+//S.print(cerr);
+            int index = -1;
+            this->P[k1+k2].binarySearch(S,&index);
+//cerr << index << endl;
+            if (index >= 0) {
+              // existeix
+              cols[rows[lastRow + 1]] = index;
+              values[rows[lastRow + 1]] = local_values1[i]*local_values2[j];
+              rows[lastRow + 1]++;
+            } else {
+              // no existeix
+            }
+          }
+
+    }
+
+  free(simplex);
+
+  sparseMatrix N(numRows,numCols,rows,cols,values);
+  free(rows);
+  free(cols);
+  free(values);
+
+  return N;
+}
+
 sparseMatrix simplicialChainComplex::flat(int k, const sparseMatrix & M) const {
 
 
@@ -537,3 +604,20 @@ sparseMatrix simplicialChainComplex::getHomologyRepresentatives(int i, sparseMat
     return X;
 
 }
+
+sparseMatrix simplicialChainComplex::getCohomologyRepresentatives(int i, sparseMatrix M) const {
+
+    sparseMatrix L,D,U,Q,P;
+    this->getCohomology(i).transpose().LDU_efficient(L,D,U,P,Q);
+    if (i > 0) {
+      M = this->d_ldu[i-1].Q.transpose() * this->d_ldu[i-1].U.transpose().LComplementary(this->d_ldu[i-1].Q*M.transpose());
+    } else {
+      // no boundaries to remove
+      M = M.transpose();
+    }
+
+    sparseMatrix X = L.LXeqY(P.transpose()*M);
+    return X;
+
+}
+

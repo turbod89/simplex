@@ -30,11 +30,13 @@ cerr << "Read and inflate simplicial Chain: " << timeMark(c_start) << "s" << end
   for (int i = S.dim(); i >= 0 ; i--) {
     H[i] = S.getHomology(i);
 cerr << "Find homology classes of grade " << i << ": " << timeMark(c_start) << "s" << endl;
-    cout << "# HOMOLOGY CLASSES OF GRADE " << i << endl;
+    cout << "# HOMOLOGY CLASSES OF GRADE " << i << "(" << H[i].size(1) << ")" << endl;
     if (H[i].size(1) == 1 ) {
+      cout << "A" << i << "_1" << endl;
       H[i].print(cout);
     } else if (H[i].size(1) > 1) {
       for (int j = 0; j < H[i].size(1); j++) {
+        cout << "A" << i << "_" << j+1 << endl;
         H[i][j].print(cout);
       }
     }
@@ -45,11 +47,13 @@ cerr << "Find homology classes of grade " << i << ": " << timeMark(c_start) << "
   for (int i = S.dim(); i >= 0 ; i--) {
     cH[i] = S.getCohomology(i);
 cerr << "Find cohomology classes of grade " << i << ": " << timeMark(c_start) << "s" << endl;
-    cout << "# COHOMOLOGY CLASSES OF GRADE " << i << endl;
+    cout << "# COHOMOLOGY CLASSES OF GRADE " << i << "(" << cH[i].size(1) << ")"  << endl;
     if (cH[i].size(1) == 1 ) {
+      cout << "B" << i << "_1" << endl;
       cH[i].print(cout);
     } else if (cH[i].size(1) > 1) {
       for (int j = 0; j < cH[i].size(1); j++) {
+        cout << "B" << i << "_" << j+1 << endl;
         cH[i][j].print(cout);
       }
     }
@@ -78,7 +82,31 @@ cerr << "Calcule Poincare dual of classes of grade " << i << ": " << timeMark(c_
 cerr << "Calcule representatives: " << timeMark(c_start) << "s" << endl;
   }
 
+  for (int i = 0 ; i <= S.dim(); i++)
+    for (int j = 0; j <= S.dim(); j++) {
+      cout << "# CUP PRODUCT OF COHOMOLOGY CLASSES OF GRADE " << i << " WITH ONES OF GRADE " << j << endl;
+      sparseMatrix R = S.cup(i,cH[i],j,cH[j]);
+cerr << "Calcule cup product of classes of grade " << i << " with classes of grade " << j <<": " << timeMark(c_start) << "s" << endl;
+cerr << R.size(1) << endl;
+      if (R.size(1) == 1) {
+        cout << "B" << i << "_1" << " \\cup " << "B" << j << "_1" << endl;
+        R.print(cout);
+      } else if (R.size(1) > 1)
+        for (int k = 0 ; k < R.size(1); k++) {
+          cout << "B" << i << "_" << (int) (k/cH[j].size(1)) + 1 << " \\cup " << "B" << j << "_" << (k%cH[j].size(1)) + 1 << endl;
+          R[k].print(cout);
+      }
 
+R.print_octave(cerr);
+      if (i + j <= S.dim() ) {
+        sparseMatrix T = S.getCohomologyRepresentatives(i+j,R);
+cerr << T.size(1) << endl;
+        T.print_octave(cout);
+
+cerr << "Calcule representatives: " << timeMark(c_start) << "s" << endl;
+      }
+
+    }
 
   //delete[] H;
   //delete[] cH;
