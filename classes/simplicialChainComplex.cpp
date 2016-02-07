@@ -594,7 +594,7 @@ sparseMatrix simplicialChainComplex::getHomologyRepresentatives(int i, sparseMat
     sparseMatrix L,D,U,Q,P;
     this->getHomology(i).transpose().LDU_efficient(L,D,U,P,Q);
     if (i < this->dim()) {
-      M = this->d_ldu[i].P * this->d_ldu[i].L.LComplementary(this->d_ldu[i].P.transpose()*M.transpose());
+      M = this->d_ldu[i].P * this->d_ldu[i].L.LComplementaryEach(this->d_ldu[i].P.transpose()*M.transpose());
     } else {
       // no boundaries to remove
       M = M.transpose();
@@ -609,13 +609,14 @@ sparseMatrix simplicialChainComplex::getCohomologyRepresentatives(int i, sparseM
 
     sparseMatrix L,D,U,Q,P;
     this->getCohomology(i).transpose().LDU_efficient(L,D,U,P,Q);
+
     if (i > 0) {
-      M = this->d_ldu[i-1].Q.transpose() * this->d_ldu[i-1].U.transpose().LComplementary(this->d_ldu[i-1].Q*M.transpose());
+//this->d_ldu[i-1].U.transpose().print_octave(cerr);
+      M = this->d_ldu[i-1].Q.transpose() * this->d_ldu[i-1].U.transpose().LComplementaryEach(this->d_ldu[i-1].Q*M.transpose());
     } else {
-      // no boundaries to remove
+      // no coboundaries to remove
       M = M.transpose();
     }
-
     sparseMatrix X = L.LXeqY(P.transpose()*M);
     return X;
 

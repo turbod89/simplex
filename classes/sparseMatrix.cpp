@@ -1502,6 +1502,24 @@ sparseMatrix sparseMatrix::LComplementary(const sparseMatrix &Y) const {
 
 }
 
+sparseMatrix sparseMatrix::LComplementaryEach(const sparseMatrix &Y) const {
+  // THIS IS MATRIX L
+  // we will assum this matrix is lower triangular
+  // with non null values on the diagonal
+
+  sparseMatrix L(this->numCols,this->numCols,this->rows,this->cols,this->values);
+  sparseMatrix Y2(this->numCols,Y.size(2),Y.getRows(),Y.getCols(),Y.getValues());
+  sparseMatrix X = L.LXeqY(Y2);
+
+//cerr << this->size(1) << " x " << this->size(2) << " " << X.size(1) << " x " << X.size(2)  << endl;
+
+
+  sparseMatrix A = (*this)*X +Y*(-1);
+
+  return A;
+
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 //

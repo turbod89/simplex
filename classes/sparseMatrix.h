@@ -91,6 +91,7 @@ class sparseMatrix {
     sparseMatrix ker() const;
     sparseMatrix LXeqY(const sparseMatrix &Y) const;
     sparseMatrix LComplementary(const sparseMatrix &Y) const;
+    sparseMatrix LComplementaryEach(const sparseMatrix &Y) const;
 };
 
 inline int sparseMatrix::length() const {
