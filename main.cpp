@@ -91,6 +91,7 @@ cerr << "Calcule Poincare dual of classes of grade " << i << ": " << timeMark(c_
     sparseMatrix X = L.LXeqY(P.transpose()*PD_C);
     X.print_octave(cout);
     */
+//sizePD_C.print(cerr); 
     S.getHomologyRepresentatives(S.dim()-i,PD_C).print_octave(cout);
 cerr << "Calcule representatives: " << timeMark(c_start) << "s" << endl;
   }
@@ -111,14 +112,14 @@ cerr << "Calcule cup product of classes of grade " << i << " with classes of gra
 cerr << "Calcule representatives: " << timeMark(c_start) << "s" << endl;
 
         if (T.size(1) == 1) {
-          cout << "B" << i << "_1" << " \\cup " << "B" << j << "_1" << endl;
-          //T.print_octave(cout);
-          R.print(cout);
+          cout << "B" << i << "_1" << " \\cup " << "B" << j << "_1 = " ;
+          T.print_octave(cout);
+          //R.print(cout);
         } else if (T.size(1) > 1)
           for (int k = 0 ; k < T.size(1); k++) {
-            cout << "B" << i << "_" << (int) (k/cH[j].size(1)) + 1 << " \\cup " << "B" << j << "_" << (k%cH[j].size(1)) + 1 << endl;
-            //T[k].print_octave(cout);
-            R[k].print(cout);
+            cout << "B" << i << "_" << (int) (k/cH[j].size(1)) + 1 << " \\cup " << "B" << j << "_" << (k%cH[j].size(1)) + 1 << " = ";
+            T[k].print_octave(cout);
+            //R[k].print(cout);
         }
 
       }
