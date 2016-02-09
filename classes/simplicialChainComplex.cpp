@@ -54,6 +54,10 @@ void simplicialChainComplex::vsplit(int n, int m, int * A, int k, int const * co
 simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedron& P) {
   this->n = P.dim()+1;
   this->P = (simplicialPolyhedron *) malloc(this->n*sizeof(simplicialPolyhedron));
+  this->isHomologyCalculated = (bool *) malloc((this->n)*sizeof(bool));
+  this->isCohomologyCalculated = (bool *) malloc((this->n)*sizeof(bool));
+  this->homology = (sparseMatrix *) malloc((this->n)*sizeof(sparseMatrix));
+  this->cohomology = (sparseMatrix *) malloc((this->n)*sizeof(sparseMatrix));
   this->d = (sparseMatrix *) malloc((this->n-1)*sizeof(sparseMatrix));
   this->d_ldu = (LDU_group *) malloc((this->n-1)*sizeof(LDU_group));
   this->orientation = (int *) malloc(P.length()*sizeof(int));
@@ -127,6 +131,12 @@ simplicialChainComplex& simplicialChainComplex::inflate(const simplicialPolyhedr
     }
 
 
+  }
+
+  // homology / cohomology
+  for (int i = 0; i < this->n ; i++) {
+    this->isHomologyCalculated[i] = false;
+    this->isCohomologyCalculated[i] = false;
   }
 
   return *this;
@@ -537,23 +547,42 @@ sparseMatrix simplicialChainComplex::getHomology(int i) const {
 
   if (i == this->dim()) {
 
-    return this->d[i-1].ker().transpose();
+    if ( !this->isHomologyCalculated[i] ) {
+      this->homology[i] = (this->d_ldu[i-1].Q.transpose() * this->d_ldu[i-1].U.ker()).transpose();
+      this->isHomologyCalculated[i] = true;
+
+    }
+
+    return this->homology[i];
 
   } else if (i == 0) {
 
-    sparseMatrix P1tP0KerL0t = this->d_ldu[0].P.transpose();
-    sparseMatrix ImL1 = this->d_ldu[0].L;
-    sparseMatrix X = this->d_ldu[0].P*ImL1.LComplementary(P1tP0KerL0t);
+    if ( !this->isHomologyCalculated[i] ) {
+      sparseMatrix P1tP0KerL0t = this->d_ldu[0].P.transpose();
+      sparseMatrix ImL1 = this->d_ldu[0].L;
+      sparseMatrix X = this->d_ldu[0].P*ImL1.LComplementary(P1tP0KerL0t);
+      
+      this->homology[i] = X.transpose();
+      this->isHomologyCalculated[i] = true;
+    }
 
-    return X.transpose();
+
+    return this->homology[i];
 
   } else if ( i < this->dim() && i > 0) {
 
-    sparseMatrix P1tP0KerL0t = this->d_ldu[i].P.transpose()*this->d_ldu[i-1].Q.transpose()*(this->d_ldu[i-1].U.ker());
-    sparseMatrix ImL1 = this->d_ldu[i].L;
-    sparseMatrix X = this->d_ldu[i].P*ImL1.LComplementary(P1tP0KerL0t);
+    if ( !this->isHomologyCalculated[i] ) {
 
-    return X.transpose();
+      sparseMatrix P1tP0KerL0t = this->d_ldu[i].P.transpose()*this->d_ldu[i-1].Q.transpose()*(this->d_ldu[i-1].U.ker());
+      sparseMatrix ImL1 = this->d_ldu[i].L;
+      sparseMatrix X = this->d_ldu[i].P*ImL1.LComplementary(P1tP0KerL0t);
+
+      this->homology[i] = X.transpose();
+      this->isHomologyCalculated[i] = true;
+
+    }
+
+    return this->homology[i];
 
   }
 
@@ -565,23 +594,40 @@ sparseMatrix simplicialChainComplex::getCohomology(int i) const {
 
   if (i == 0) {
 
-    return this->d[i].transpose().ker().transpose();
+    if ( !this->isCohomologyCalculated[i] ) {
+      this->cohomology[i] = (this->d_ldu[i].P * this->d_ldu[i].L.transpose().ker()).transpose();
+      this->isCohomologyCalculated[i] = true;
+    }
+
+    return this->cohomology[i];
 
   } else if (i == this->dim()) {
 
-    sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q.transpose();
-    sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
-    sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
+    if ( !this->isCohomologyCalculated[i] ) {
 
-    return X.transpose();
+      sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q.transpose();
+      sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
+      sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
+
+      this->cohomology[i] = X.transpose();
+      this->isCohomologyCalculated[i] = true;
+    }
+
+    return this->cohomology[i];
 
   } else if ( i < this->dim() && i > 0) {
   
-    sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q*this->d_ldu[i].P*(this->d_ldu[i].L.transpose().ker());
-    sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
-    sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
+    if ( !this->isCohomologyCalculated[i] ) {
 
-    return X.transpose();
+      sparseMatrix P0tP1KerL1t = this->d_ldu[i-1].Q*this->d_ldu[i].P*(this->d_ldu[i].L.transpose().ker());
+      sparseMatrix ImL0 = this->d_ldu[i-1].U.transpose();
+      sparseMatrix X = this->d_ldu[i-1].Q.transpose()*ImL0.LComplementary(P0tP1KerL1t);
+
+      this->cohomology[i] = X.transpose();
+      this->isCohomologyCalculated[i] = true;
+    }
+
+    return this->cohomology[i];
 
   }
 
@@ -600,7 +646,8 @@ sparseMatrix simplicialChainComplex::getHomologyRepresentatives(int i, sparseMat
       M = M.transpose();
     }
 
-    sparseMatrix X = L.LXeqY(P.transpose()*M);
+// D and U should be diagonal and self inverses
+    sparseMatrix X = Q.transpose()*U*D*(L.LXeqY(P.transpose()*M));
     return X;
 
 }
@@ -617,7 +664,8 @@ sparseMatrix simplicialChainComplex::getCohomologyRepresentatives(int i, sparseM
       // no coboundaries to remove
       M = M.transpose();
     }
-    sparseMatrix X = L.LXeqY(P.transpose()*M);
+// D and U should be diagonal and invertibles and self inverses
+    sparseMatrix X = Q.transpose()*U*D*L.LXeqY(P.transpose()*M);
     return X;
 
 }

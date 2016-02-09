@@ -40,6 +40,12 @@ class simplicialChainComplex {
   
   simplicialPolyhedron * P;
   sparseMatrix * d;
+  sparseMatrix * homology;
+  sparseMatrix * cohomology;
+
+  bool * isHomologyCalculated;
+  bool * isCohomologyCalculated;
+
   
   int * orientation;
   int n;

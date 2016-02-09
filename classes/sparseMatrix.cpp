@@ -1493,7 +1493,7 @@ sparseMatrix sparseMatrix::LComplementary(const sparseMatrix &Y) const {
 //cerr << this->size(1) << " x " << this->size(2) << " " << X.size(1) << " x " << X.size(2)  << endl;
 
 
-  sparseMatrix A = (*this)*X +Y*(-1);
+  sparseMatrix A = (*this)*X*(-1) +Y;
   // Aqui es on triga
   sparseMatrix l,d,u,p,q;
   A.LDU_efficient(l,d,u,p,q);
@@ -1514,7 +1514,7 @@ sparseMatrix sparseMatrix::LComplementaryEach(const sparseMatrix &Y) const {
 //cerr << this->size(1) << " x " << this->size(2) << " " << X.size(1) << " x " << X.size(2)  << endl;
 
 
-  sparseMatrix A = (*this)*X +Y*(-1);
+  sparseMatrix A = (*this)*X*(-1) +Y;
 
   return A;
 
